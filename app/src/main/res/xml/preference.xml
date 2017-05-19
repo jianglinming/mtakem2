@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="autoMode"
+        android:title="无人值守" />
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="check_box_ignorenotify"
+        android:title="忽略通知" />
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="check_box_autoReply"
+        android:title="自动回复" />
+    <EditTextPreference
+        android:key="edit_text_autoReplyText"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="自动回复词语设置" />
+</PreferenceScreen>
