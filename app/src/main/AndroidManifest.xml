@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mzd.mtakem2"
     android:versionCode="1"
-    android:versionName="1.1beta"
+    android:versionName="1.2beta"
     >
 
     <application

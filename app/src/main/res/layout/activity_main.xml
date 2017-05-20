@@ -19,9 +19,18 @@
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
             android:layout_centerVertical="true"
-            android:text="设置"
+            android:text="@+id/title_activity_settings"
             tools:layout_editor_absoluteX="148dp"
             tools:layout_editor_absoluteY="253dp" />
+
+        <TextView
+            android:id="@+id/txtMac"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/button"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="91dp"
+            android:text="" />
     </RelativeLayout>
 
 </android.support.constraint.ConstraintLayout>
