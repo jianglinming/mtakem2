@@ -187,7 +187,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         //无人值守模式下，10没监控到任何消息的话，把应用放到后台去。
                         if (bAutoMode) {
                             nStatusCounter++;
-                            if (nStatusCounter >= 500) {
+                            if (nStatusCounter >= 100) {
                                 nStatusCounter = 0;
                                 if (bWxforeground) back2Home();
                             }
@@ -358,19 +358,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
         }
         if (currentNotification != null) {
-            String content = currentNotification.tickerText.toString();
-            Log.i(TAG, "通知栏消息:" + content);
-            if (content.contains("[微信红包]")) {
-                PendingIntent pendingIntent = currentNotification.contentIntent;
-                try {
-                    pendingIntent.send();
-                    currentNotification = null;
-                    return true;
-                } catch (PendingIntent.CanceledException e) {
-                    e.printStackTrace();
-                }
+            PendingIntent pendingIntent = currentNotification.contentIntent;
+            try {
+                pendingIntent.send();
+                currentNotification = null;
+                return true;
+            } catch (PendingIntent.CanceledException e) {
+                e.printStackTrace();
             }
-
         }
         currentNotification = null;
         return false;
@@ -546,7 +541,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             //只有在监听阶段，的内容消息才认可处理。
             if (!bIgnoreNotify && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
                 synchronized (this) {
-                    currentNotifications.add((Notification) event.getParcelableData());
+                    Notification notification = (Notification) event.getParcelableData();
+                    String content = notification.tickerText.toString();
+                    Log.i(TAG, "通知栏消息:" + content);
+                    if(content.contains("[微信红包]")){
+                        currentNotifications.add((Notification) event.getParcelableData());
+                    }
                 }
             }
         } else if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {

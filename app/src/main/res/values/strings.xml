@@ -1,7 +1,17 @@
 <resources>
     <string name="app_name">mtakem2</string>
     <string name="app_description">mtakem2</string>
+    <string name="app_warning">警告:本软件仅用于学习测试，不得用本软件从事赌博和其他非法活动，否则后果自负！</string>
+    <string name="app_title">微信助手</string>
     <string name="title_activity_settings">设置</string>
+    <string name="service_on">开启</string>
+    <string name="service_off">关闭</string>
+    <string name="check_update">检查更新</string>
+    <string name="version_name">版本</string>
+    <string name="can_not_find_version_name">无法识别的版本</string>
+
+
+
 
 
 </resources>
