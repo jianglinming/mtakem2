@@ -9,9 +9,8 @@
     <string name="check_update">检查更新</string>
     <string name="version_name">版本</string>
     <string name="can_not_find_version_name">无法识别的版本</string>
-
-
-
-
-
+    <string name="download_processing">下载中</string>
+    <string name="have_new_version">有新版本</string>
+    <string name="title_activity_update">软件更新页面</string>
+    <string name="url_update_app">https://api.github.com/repos/jianglinming/mtakem2/releases/latest</string>
 </resources>

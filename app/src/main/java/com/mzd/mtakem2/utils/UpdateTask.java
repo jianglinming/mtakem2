@@ -53,7 +53,6 @@ public class UpdateTask extends AsyncTask<String, Integer, String> {
     @SuppressWarnings("deprecation")
     @Override
     protected String doInBackground(String... uri) {
-        Log.i("download","execute download file");
         InputStream input = null;
         OutputStream output = null;
         HttpURLConnection connection = null;

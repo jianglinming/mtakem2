@@ -2,11 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mzd.mtakem2"
     android:versionCode="1"
-    android:versionName="1.2beta"
-    >
+    android:versionName="v1.0.0.20170523_alpha">
+
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission  android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -14,20 +15,19 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity"
-            android:screenOrientation="portrait"
-            >
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".SettingsActivity"
-            android:theme="@style/Base.Theme.AppCompat.Light"
-            android:launchMode="standard">
-        </activity>
+        <activity
+            android:name=".SettingsActivity"
+            android:launchMode="standard"
+            android:theme="@style/Base.Theme.AppCompat.Light"></activity>
 
         <service
             android:name=".MtakemService"
@@ -41,6 +41,10 @@
                 android:resource="@xml/accessible_service_config" />
         </service>
 
+        <activity
+            android:name=".UpdateActivity"
+            android:label="@string/title_activity_update"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>

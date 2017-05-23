@@ -1,9 +1,7 @@
 package com.mzd.mtakem2;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -14,8 +12,6 @@ import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.ImageView;
 import android.widget.TextView;
-
-import com.mzd.mtakem2.utils.UpdateTask;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -96,11 +92,12 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
 
     //检查更新
     public void openCheckUpdate(View view) {
+        /*
         // declare the dialog as a member field of your activity
         ProgressDialog mProgressDialog;
         // instantiate it within the onCreate method
         mProgressDialog = new ProgressDialog(MainActivity.this);
-        mProgressDialog.setMessage("A message");
+        mProgressDialog.setMessage(getString(R.string.download_processing));
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgressDialog.setCancelable(true);
@@ -112,7 +109,10 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             public void onCancel(DialogInterface dialog) {
                 downloadTask.cancel(true);
             }
-        });
+        });*/
+        Intent updateIntent = new Intent(this, UpdateActivity.class);
+        startActivity(updateIntent);
+
     }
 
     /**
@@ -159,6 +159,13 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             e.printStackTrace();
             return this.getString(R.string.can_not_find_version_name);
         }
+    }
+
+
+    public boolean checkVersion(String url){
+
+
+        return false;
     }
 
     @Override
