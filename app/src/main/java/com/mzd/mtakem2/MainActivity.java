@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             PackageManager manager = this.getPackageManager();
             PackageInfo info = manager.getPackageInfo(this.getPackageName(), 0);
             String version = info.versionName;
-            return this.getString(R.string.version_name) + version;
+            return version;
         } catch (Exception e) {
             e.printStackTrace();
             return this.getString(R.string.can_not_find_version_name);

@@ -61,7 +61,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private Handler handler = new Handler();
     private SharedPreferences sharedPreferences;
 
-
     private static final int NSTATUS_CHECKNOTIFYSANDCONTENT = 1;
     private static final int NSTATUS_NOTIFYOPENCHATWINDOW = 2;
     private static final int NSTATUS_NOTIFYUNPACKHB = 3;
