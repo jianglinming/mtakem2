@@ -183,10 +183,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             }
                         }
 
+                        //正常1ms左右循环一次
                         //无人值守模式下，10没监控到任何消息的话，把应用放到后台去。
                         if (bAutoMode) {
                             nStatusCounter++;
-                            if (nStatusCounter >= 500) {
+                            if (nStatusCounter >= 100) {
                                 nStatusCounter = 0;
                                 if (bWxforeground) back2Home();
                             }
@@ -203,8 +204,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             Log.i(TAG, "发现HB项,进入打开阶段");
 
                         } else {
+                            //20ms一次
                             nStatusCounter++;
-                            if (nStatusCounter >= 500) {
+                            if (nStatusCounter >= 100) {
                                 nStatusCounter = 0;
                                 nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
                                 Log.i(TAG, "聊天窗HB项,检查超时，返回通知检查");
@@ -233,7 +235,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 Log.i(TAG, "Hb已经打开,窗体返回后延时");
                             } else {
                                 nStatusCounter++;
-                                if (nStatusCounter >= 500) {
+                                if (nStatusCounter >= 300) {
                                     nStatusCounter = 0;
                                     nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
                                     Log.i(TAG, "执行打开Hb超时，返回通知检查");
@@ -250,7 +252,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             Log.i(TAG, "打开HB,窗体返回后延时");
                         } else {
                             nStatusCounter++;
-                            if (nStatusCounter >= 500) {
+                            if (nStatusCounter >= 100) {
                                 nStatusCounter = 0;
                                 nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
                                 Log.i(TAG, "打开HB返回处理超时，返回通知检查");
@@ -261,7 +263,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                     case NSTATUS_RETURNCHECKDELAY: {
                         nStatusCounter++;
-                        if (nStatusCounter >= 100) {
+                        if (nStatusCounter >= 10) {
                             if (bAutoReply && bUnpackedSuccessful) {
                                 nStatusCounter = 0;
                                 bUnpackedSuccessful = false;
@@ -556,8 +558,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     synchronized (this) {
                         Notification notification = (Notification) event.getParcelableData();
                         String content = notification.tickerText.toString();
-                        Log.i(TAG, "通知栏消息:" + content);
                         if (content.contains("[微信红包]")) {
+                            Log.i(TAG, "通知栏消息:" + content);
                             currentNotifications.add((Notification) event.getParcelableData());
                         }
                     }
