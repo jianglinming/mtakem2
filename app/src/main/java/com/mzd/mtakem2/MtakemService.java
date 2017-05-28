@@ -23,7 +23,6 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.accessibility.AccessibilityWindowInfo;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -141,7 +140,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     else bWxforeground = false;
                     //判断微信处在聊天窗口还是聊天列表窗口。/a3_这个资源列表，聊天窗那个喇叭(wx6.5.7)
                     //6.5.8变为a47
-                    List<AccessibilityNodeInfo> tmpnds = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/a47");
+                    List<AccessibilityNodeInfo> tmpnds = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/a3_");
                     if (tmpnds.isEmpty()) bChatWindow = false;
                     else bChatWindow = true;
                 }
@@ -329,7 +328,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     private boolean chatListCheck(AccessibilityNodeInfo nd) {
         //6.5.7是afx,6.5.8变为agy
-        List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/agy");
+        List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/afx");
         AccessibilityNodeInfo findNode = null;
         for (int i = 0; i < nodeInfos1.size(); i++) {
             if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
@@ -379,7 +378,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         try {
             String contextString = "";
             //聊天窗口的标题(6.5.7为gh,6.5.8改为gp)
-            List<AccessibilityNodeInfo> titleNodes = rn.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/gp");
+            List<AccessibilityNodeInfo> titleNodes = rn.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/gh");
             if (titleNodes != null && !titleNodes.isEmpty()) {
                 hbInfo.SetChatWindowTitle(titleNodes.get(0).getText().toString());
             }
@@ -413,7 +412,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 }
 
                 //聊天记录的位置信息作为补充的页面信息（6.5.7为if,6.5.8变为im)
-                List<AccessibilityNodeInfo> ifNodes = rn.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/im");
+                List<AccessibilityNodeInfo> ifNodes = rn.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/if");
                 for (AccessibilityNodeInfo ifNode : ifNodes) {
                     Rect ifRect = new Rect();
                     ifNode.getBoundsInScreen(ifRect);
@@ -494,7 +493,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
         if (nd != null) {
             if (currentActivityName.contains("luckymoney.ui.En")) {
-                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
+                //6.5.7是bjj,6.5.8是bm4
+                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bjj");
                 if (openNodes != null && !openNodes.isEmpty()) {
                     AccessibilityNodeInfo openNode = openNodes.get(0);
                     openNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -511,7 +511,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
         boolean bHbOpenedSuccessful = false;
         if (currentActivityName.contains("luckymoney.ui.En")) {
-            List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
+            //6.5.7是bjj,6.5.8是bm4
+            List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bjj");
             if (openNodes != null && !openNodes.isEmpty()) {
                 bHbOpenedSuccessful = false;
             } else {
@@ -568,7 +569,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 //Log.i(TAG, "TYPE_WINDOW_STATE_CHANGED");
                 setCurrentActivityName(event);
             } else if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-               // Log.i(TAG, "TYPE_WINDOW_CONTENT_CHANGED");
+                //Log.i(TAG, "TYPE_WINDOW_CONTENT_CHANGED");
                 //只有在监听阶段，的内容变化才认可处理。
                 if (nStatus == NSTATUS_CHECKNOTIFYSANDCONTENT) bContentUpdated = true;
 
@@ -762,7 +763,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     /*
             得到当前窗口所有的不管活不活动，或则他的z-index在下面的窗口
      */
-    private ArrayList<AccessibilityNodeInfo> getNodesFromWindows() {
+  /*  private ArrayList<AccessibilityNodeInfo> getNodesFromWindows() {
         List<AccessibilityWindowInfo> windows = getWindows();
         ArrayList<AccessibilityNodeInfo> nodes =
                 new ArrayList<AccessibilityNodeInfo>();
@@ -772,7 +773,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
         }
         return nodes;
-    }
+    }*/
 
     /**
      * 判断指定的应用是否在前台运行
