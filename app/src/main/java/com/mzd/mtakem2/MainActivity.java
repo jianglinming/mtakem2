@@ -92,24 +92,6 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
 
     //检查更新
     public void openCheckUpdate(View view) {
-        /*
-        // declare the dialog as a member field of your activity
-        ProgressDialog mProgressDialog;
-        // instantiate it within the onCreate method
-        mProgressDialog = new ProgressDialog(MainActivity.this);
-        mProgressDialog.setMessage(getString(R.string.download_processing));
-        mProgressDialog.setIndeterminate(true);
-        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        mProgressDialog.setCancelable(true);
-        // execute this when the downloader must be fired
-        final UpdateTask downloadTask = new UpdateTask(getApplicationContext(), mProgressDialog);
-       // downloadTask.execute("http://dlsw.baidu.com/sw-search-sp/soft/4e/30195/Git-2.7.2-32-bit_setup.1457942412.exe");
-        mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                downloadTask.cancel(true);
-            }
-        });*/
         Intent updateIntent = new Intent(this, UpdateActivity.class);
         startActivity(updateIntent);
 
