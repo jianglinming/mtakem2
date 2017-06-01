@@ -357,6 +357,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                 }
             } catch (Exception e) {
+                nStatusCounter = 0;
+                nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
                 e.printStackTrace();
             }
             handler.postDelayed(this, 1);
