@@ -13,6 +13,7 @@ public class HbInfo {
     private String hbDescription = "";
     private String happendedTime = "";
     private String contextString = "";
+    private String hbAmount = "0";
     public Rect hbRect = new Rect();
     public boolean bIsGetBySelf = false;
     public boolean bIsAHb = false;
@@ -55,6 +56,9 @@ public class HbInfo {
     public String GetContextString() {
         return contextString;
     }
+
+    public void SetHbAmount(String hbAmount){this.hbAmount = hbAmount;}
+    public String GetHbAmount(){return this.hbAmount;}
 
     @Override
     public String toString() {

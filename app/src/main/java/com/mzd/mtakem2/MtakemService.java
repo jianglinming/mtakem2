@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -25,6 +26,7 @@ import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import com.mzd.mtakem2.utils.ComFunc;
 import com.mzd.mtakem2.utils.HttpUtils;
 
 import org.json.JSONArray;
@@ -89,6 +91,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private long notify_detect_tm = 0;
     private long chatlist_detect_tm = 0;
 
+    private String mac = "";
+    private String app_ver = "";
+    String device_model = Build.MODEL; // 设备型号 。
+    String version_release = Build.VERSION.RELEASE; // 设备的系统版本 。
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -106,6 +113,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     protected void onServiceConnected() {
         super.onServiceConnected();
         Log.i(TAG, "onServiceConnected");
+        mac = ComFunc.getMac();
+        app_ver = ComFunc.getVersion(this);
+        Log.i(TAG, "APP Ver:" + app_ver);
+        Log.i(TAG, "Mac :" + mac);
+        Log.i(TAG, "Dev:" + device_model);
+        Log.i(TAG, "VERSION:" + version_release);
         handler.postDelayed(runnable, 2000);
 
         //动态增加FLAG配置，注意这非常重要，这个将使得能获取窗体的全部完整的节点。
@@ -273,6 +286,15 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     case NSTATUS_RETURNCHECKDELAY: {
                         nStatusCounter++;
                         if (nStatusCounter >= 10) {
+
+                            //上传红包数据
+                            if (bUnpackedSuccessful) {
+                                try {
+                                    uploadHbInfo();
+                                } catch (Exception e) {
+                                }
+                            }
+
                             if (bAutoReply && bUnpackedSuccessful) {
                                 nStatusCounter = 0;
                                 bUnpackedSuccessful = false;
@@ -516,7 +538,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     }
 
     private boolean dealOpenedHb(AccessibilityNodeInfo nd) {
-        //如果直接就是打开的红包，则直接返回
+          //如果直接就是打开的红包，则直接返回
         //由于抢过的红包和待抢的红包一个窗体名称，所以从有不有打开按钮区分一下红包是不是打开的。
 
         boolean bHbOpenedSuccessful = false;
@@ -533,12 +555,23 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         if (bHbOpenedSuccessful || currentActivityName.contains("luckymoney.ui.LuckyMoneyDetailUI")) {
             //如果检查到红包已经领用则返回处理
             boolean hasNodes = hasOneOfThoseNodes(
-                    WECHAT_BETTER_LUCK_CH, WECHAT_DETAILS_CH,
-                    WECHAT_BETTER_LUCK_EN, WECHAT_DETAILS_EN, WECHAT_EXPIRES_CH, WECHAT_WHOGIVEYOUAHB);
+                    WECHAT_BETTER_LUCK_CH,WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH);
             if (hasNodes) {
                 performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
                 currentNotification = null;
                 return true;
+            }
+            else{
+                //打开的按钮6.5.8是bii,6.5.7是bfw
+                List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bfw");
+                if (hbAmounts != null && !hbAmounts.isEmpty()) {
+                    AccessibilityNodeInfo hbAmount = hbAmounts.get(0);
+                    lastHb.SetHbAmount(hbAmount.getText().toString());
+                    Log.i(TAG,"红包大小："+lastHb.GetHbAmount());
+                    performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
+                    currentNotification = null;
+                    return true;
+                }
             }
         }
         return false;
@@ -836,6 +869,101 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean isScreenLocked() {
         KeyguardManager keyguardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
         return keyguardManager.inKeyguardRestrictedInputMode();
+    }
+
+    private void uploadHbInfo() throws JSONException {
+        final ContentValues values = new ContentValues();
+        String group_name = lastHb.GetChatWindowTitle();
+        if(group_name.lastIndexOf("(")!=-1) {
+            group_name = group_name.substring(0, group_name.lastIndexOf("("));
+        }
+        values.put("group_name", group_name);
+        values.put("sender", lastHb.GetSender());
+        values.put("content", lastHb.GetDescription());
+        values.put("hb_amount", lastHb.GetHbAmount());
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
+        values.put("unpacked_time", df.format(new java.util.Date()));
+        values.put("notify_consuming", notify_detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - notify_detect_tm : 0);
+        values.put("chatlist_consuming", chatlist_detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - chatlist_detect_tm : 0);
+        values.put("chatwindow_consuming", detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - detect_tm : 0);
+        JSONObject obj = new JSONObject();
+        JSONArray array = new JSONArray();
+        JSONObject item = new JSONObject();
+
+        item.put("device", device_model + "(" + version_release + ")");
+        item.put("machine_id", mac);
+        item.put("mtakem2ver", app_ver);
+        item.put("group_name", values.getAsString("group_name"));
+        item.put("sender", values.getAsString("sender"));
+        item.put("content", values.getAsString("content"));
+        item.put("hb_amount", values.getAsDouble("hb_amount"));
+        item.put("unpacked_time", values.getAsString("unpacked_time"));
+        item.put("notify_consuming", values.getAsInteger("notify_consuming"));
+        item.put("chatlist_consuming", values.getAsInteger("chatlist_consuming"));
+        item.put("chatwindow_consuming", values.getAsInteger("chatwindow_consuming"));
+        array.put(item);
+        obj.put("total", 1);
+        obj.put("rows", array);
+
+        /*
+        //不管服务端的设置输出是gkb，还是UTF-8，get这种方法都必须经过下面的编码转换
+        byte tmp[] = obj.toString().getBytes("utf-8");
+        String sendStr = new String(tmp,"gbk");
+        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo&strHbInfo="+URLEncoder.encode(sendStr.toString(),"gbk") , new HttpUtils.CallBack() {
+            @Override
+            public void onRequestComplete(String result) {
+                try {
+                   //服务端返回需要对字符进行encode处理，才不会乱码。
+                    Log.i("main",URLDecoder.decode(result,"gbk"));
+                }
+                catch (Exception e){
+
+                }
+
+
+            }
+        });*/
+
+        //post方法，就不用对字符串进行变换
+        String postcontent = "";
+        try {
+            //Log.i(TAG,obj.toString());
+            postcontent = URLEncoder.encode(obj.toString(), "gbk");
+        } catch (Exception e) {
+            postcontent = "";
+        }
+
+        if (!postcontent.equals("")) {
+            try {
+                HttpUtils.doPostAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" +postcontent, new HttpUtils.CallBack() {
+                    @Override
+                    public void onRequestComplete(String result) {
+                        try {
+                            String resp = URLDecoder.decode(result, "gbk");
+                            Log.i("main", resp);
+                            JSONObject obj = new JSONObject(resp);
+                            if (obj.getBoolean("result")) {
+
+                            } else {
+                                //报告插入失败，将红包存在本地
+                                HbHistory hb = new HbHistory(getApplicationContext());
+                                hb.insert(values);
+                            }
+                        } catch (Exception e) {
+                            //回复错误信息也插入数据库
+                            HbHistory hb = new HbHistory(getApplicationContext());
+                            hb.insert(values);
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                //通信失败也存在本地
+                HbHistory hb = new HbHistory(getApplicationContext());
+                hb.insert(values);
+            }
+        }
+
     }
 
 }
