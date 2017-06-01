@@ -233,13 +233,28 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             Log.i(TAG, "发现HB项,进入打开阶段");
 
                         } else {
-                            //20ms一次
-                            nStatusCounter++;
-                            if (nStatusCounter >= 100) {
-                                nStatusCounter = 0;
-                                nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
-                                Log.i(TAG, "聊天窗HB项,检查超时，返回通知检查");
-                                if (bAutoMode) back2Home();//如果是自动模式，聊天窗自动到后台
+                            //如果没发现实际微信红包的话，有课能是假的红包，这是立刻忽视它，以节约时间。
+                            //聊天记录的位置信息作为补充的页面信息（6.5.7为if,6.5.8变为im)
+                            List<AccessibilityNodeInfo> falseHbChecks = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/im");
+                            if (falseHbChecks != null && !falseHbChecks.isEmpty()) {
+                                AccessibilityNodeInfo falseHbCheck = falseHbChecks.get(falseHbChecks.size()-1);
+                                if(falseHbCheck!=null&&falseHbCheck.getText().toString().contains("[微信红包]")){
+                                    Log.i(TAG, "假HB，返回通知检查");
+                                    if (bAutoMode)
+                                        performGlobalAction(GLOBAL_ACTION_HOME);//打开红包后返回到聊天页面
+                                    nStatusCounter = 0;
+                                    nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                                }
+
+                            } else {
+                                //20ms一次
+                                nStatusCounter++;
+                                if (nStatusCounter >= 100) {
+                                    nStatusCounter = 0;
+                                    nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                                    Log.i(TAG, "聊天窗HB项,检查超时，返回通知检查");
+                                    if (bAutoMode) back2Home();//如果是自动模式，聊天窗自动到后台
+                                }
                             }
                         }
                     }
