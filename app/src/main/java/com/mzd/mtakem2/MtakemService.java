@@ -228,28 +228,37 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                         } else {
 
-                            //如果没发现实际微信红包的话，有课能是假的红包，这是立刻忽视它，以节约时间。
-                            List<AccessibilityNodeInfo> falseHbChecks = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/if");
-                            if (falseHbChecks != null && !falseHbChecks.isEmpty()) {
-                                AccessibilityNodeInfo falseHbCheck = falseHbChecks.get(falseHbChecks.size()-1);
-                                if(falseHbCheck!=null&&falseHbCheck.getText().toString().contains("[微信红包]")){
-                                    Log.i(TAG, "假HB，返回通知检查");
-                                    if (bAutoMode)
-                                        performGlobalAction(GLOBAL_ACTION_HOME);//打开红包后返回到聊天页面
-                                    nStatusCounter = 0;
-                                    nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                            try {
+                                //如果没发现实际微信红包的话，有课能是假的红包，这是立刻忽视它，以节约时间。
+                                List<AccessibilityNodeInfo> falseHbChecks = null;
+                                if (nd != null) {
+                                    falseHbChecks = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/if");
                                 }
+                                if (falseHbChecks != null && !falseHbChecks.isEmpty()) {
+                                    AccessibilityNodeInfo falseHbCheck = falseHbChecks.get(falseHbChecks.size() - 1);
+                                    if (falseHbCheck != null && falseHbCheck.getText().toString().contains("[微信红包]")) {
+                                        Log.i(TAG, "假HB，返回通知检查");
+                                        if (bAutoMode)
+                                            performGlobalAction(GLOBAL_ACTION_HOME);//打开红包后返回到聊天页面
+                                        nStatusCounter = 0;
+                                        nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                                    }
 
-                            } else {
-                                //20ms一次
-                                nStatusCounter++;
-                                if (nStatusCounter >= 100) {
-                                    nStatusCounter = 0;
-                                    nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
-                                    Log.i(TAG, "聊天窗HB项,检查超时，返回通知检查");
-                                    if (bAutoMode) back2Home();//如果是自动模式，聊天窗自动到后台
                                 }
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
+
+
+                            //20ms一次
+                            nStatusCounter++;
+                            if (nStatusCounter >= 100) {
+                                nStatusCounter = 0;
+                                nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                                Log.i(TAG, "聊天窗HB项,检查超时，返回通知检查");
+                                if (bAutoMode) back2Home();//如果是自动模式，聊天窗自动到后台
+                            }
+
 
                         }
                     }
@@ -511,21 +520,25 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
         }
         return false;*/
-        if (nd != null) {
-            HbInfo hbInfo = new HbInfo();
-            AccessibilityNodeInfo nodeInfo = GetHbInfo(nd, hbInfo);
-            //if (hbInfo != null) Log.i(TAG, "nowHb:" + hbInfo.toString());
-            //if (lastHb != null) Log.i(TAG, "lastHb:" + lastHb.toString());
-            if (nodeInfo != null && !hbInfo.equals(lastHb)) {
-                lastHb = hbInfo;
-                if (!hbInfo.bIsGetBySelf) {
-                    if (nodeInfo != null && nodeInfo.getParent() != null && nodeInfo.getParent().getParent() != null && nodeInfo.getParent().getParent().getParent() != null && nodeInfo.getParent().getParent().getParent().getParent() != null) {
-                        nodeInfo.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                        detect_tm = Calendar.getInstance().getTimeInMillis();
-                        return true;
+        try {
+            if (nd != null) {
+                HbInfo hbInfo = new HbInfo();
+                AccessibilityNodeInfo nodeInfo = GetHbInfo(nd, hbInfo);
+                //if (hbInfo != null) Log.i(TAG, "nowHb:" + hbInfo.toString());
+                //if (lastHb != null) Log.i(TAG, "lastHb:" + lastHb.toString());
+                if (nodeInfo != null && !hbInfo.equals(lastHb)) {
+                    lastHb = hbInfo;
+                    if (!hbInfo.bIsGetBySelf) {
+                        if (nodeInfo != null && nodeInfo.getParent() != null && nodeInfo.getParent().getParent() != null && nodeInfo.getParent().getParent().getParent() != null && nodeInfo.getParent().getParent().getParent().getParent() != null) {
+                            nodeInfo.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            detect_tm = Calendar.getInstance().getTimeInMillis();
+                            return true;
+                        }
                     }
                 }
             }
+        } catch (Exception e) {
+            return false;
         }
         return false;
 
@@ -544,17 +557,21 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
         }
         return false;*/
-
-        if (nd != null) {
-            if (currentActivityName.contains("luckymoney.ui.En")) {
-                //6.5.7是bjj,6.5.8是bm4
-                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bjj");
-                if (openNodes != null && !openNodes.isEmpty()) {
-                    AccessibilityNodeInfo openNode = openNodes.get(0);
-                    openNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    return true;
+        try {
+            if (nd != null) {
+                if (currentActivityName.contains("luckymoney.ui.En")) {
+                    //6.5.7是bjj,6.5.8是bm4
+                    List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bjj");
+                    if (openNodes != null && !openNodes.isEmpty()) {
+                        AccessibilityNodeInfo openNode = openNodes.get(0);
+                        openNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        return true;
+                    }
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         return false;
     }
@@ -562,38 +579,42 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean dealOpenedHb(AccessibilityNodeInfo nd) {
         //如果直接就是打开的红包，则直接返回
         //由于抢过的红包和待抢的红包一个窗体名称，所以从有不有打开按钮区分一下红包是不是打开的。
-
-        boolean bHbOpenedSuccessful = false;
-        if (currentActivityName.contains("luckymoney.ui.En")) {
-            //6.5.7是bjj,6.5.8是bm4
-            List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bjj");
-            if (openNodes != null && !openNodes.isEmpty()) {
-                bHbOpenedSuccessful = false;
-            } else {
-                bHbOpenedSuccessful = true;
+        try {
+            boolean bHbOpenedSuccessful = false;
+            if (currentActivityName.contains("luckymoney.ui.En")) {
+                //6.5.7是bjj,6.5.8是bm4
+                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bjj");
+                if (openNodes != null && !openNodes.isEmpty()) {
+                    bHbOpenedSuccessful = false;
+                } else {
+                    bHbOpenedSuccessful = true;
+                }
             }
-        }
 
-        if (bHbOpenedSuccessful || currentActivityName.contains("luckymoney.ui.LuckyMoneyDetailUI")) {
-            //如果检查到红包已经领用则返回处理
-            boolean hasNodes = hasOneOfThoseNodes(
-                    WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH);
-            if (hasNodes) {
-                performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
-                currentNotification = null;
-                return true;
-            } else {
-                //打开的按钮6.5.8是bii,6.5.7是bfw
-                List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bfw");
-                if (hbAmounts != null && !hbAmounts.isEmpty()) {
-                    AccessibilityNodeInfo hbAmount = hbAmounts.get(0);
-                    lastHb.SetHbAmount(hbAmount.getText().toString());
-                    Log.i(TAG, "红包大小：" + lastHb.GetHbAmount());
+            if (bHbOpenedSuccessful || currentActivityName.contains("luckymoney.ui.LuckyMoneyDetailUI")) {
+                //如果检查到红包已经领用则返回处理
+                boolean hasNodes = hasOneOfThoseNodes(
+                        WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH);
+                if (hasNodes) {
                     performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
                     currentNotification = null;
                     return true;
+                } else {
+                    //打开的按钮6.5.8是bii,6.5.7是bfw
+                    List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bfw");
+                    if (hbAmounts != null && !hbAmounts.isEmpty()) {
+                        AccessibilityNodeInfo hbAmount = hbAmounts.get(0);
+                        lastHb.SetHbAmount(hbAmount.getText().toString());
+                        Log.i(TAG, "红包大小：" + lastHb.GetHbAmount());
+                        performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
+                        currentNotification = null;
+                        return true;
+                    }
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         return false;
     }
