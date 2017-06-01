@@ -6,6 +6,7 @@ import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.KeyguardManager;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -226,14 +227,30 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             Log.i(TAG, "发现HB项,进入打开阶段");
 
                         } else {
-                            //20ms一次
-                            nStatusCounter++;
-                            if (nStatusCounter >= 100) {
-                                nStatusCounter = 0;
-                                nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
-                                Log.i(TAG, "聊天窗HB项,检查超时，返回通知检查");
-                                if (bAutoMode) back2Home();//如果是自动模式，聊天窗自动到后台
+
+                            //如果没发现实际微信红包的话，有课能是假的红包，这是立刻忽视它，以节约时间。
+                            List<AccessibilityNodeInfo> falseHbChecks = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/if");
+                            if (falseHbChecks != null && !falseHbChecks.isEmpty()) {
+                                AccessibilityNodeInfo falseHbCheck = falseHbChecks.get(falseHbChecks.size()-1);
+                                if(falseHbCheck!=null&&falseHbCheck.getText().toString().contains("[微信红包]")){
+                                    Log.i(TAG, "假HB，返回通知检查");
+                                    if (bAutoMode)
+                                        performGlobalAction(GLOBAL_ACTION_HOME);//打开红包后返回到聊天页面
+                                    nStatusCounter = 0;
+                                    nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                                }
+
+                            } else {
+                                //20ms一次
+                                nStatusCounter++;
+                                if (nStatusCounter >= 100) {
+                                    nStatusCounter = 0;
+                                    nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                                    Log.i(TAG, "聊天窗HB项,检查超时，返回通知检查");
+                                    if (bAutoMode) back2Home();//如果是自动模式，聊天窗自动到后台
+                                }
                             }
+
                         }
                     }
                     break;
@@ -396,6 +413,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             PendingIntent pendingIntent = currentNotification.contentIntent;
             try {
                 pendingIntent.send();
+                NotificationManager notificationManager
+                        = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
                 currentNotification = null;
                 return true;
             } catch (PendingIntent.CanceledException e) {
@@ -540,7 +560,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     }
 
     private boolean dealOpenedHb(AccessibilityNodeInfo nd) {
-          //如果直接就是打开的红包，则直接返回
+        //如果直接就是打开的红包，则直接返回
         //由于抢过的红包和待抢的红包一个窗体名称，所以从有不有打开按钮区分一下红包是不是打开的。
 
         boolean bHbOpenedSuccessful = false;
@@ -557,19 +577,18 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         if (bHbOpenedSuccessful || currentActivityName.contains("luckymoney.ui.LuckyMoneyDetailUI")) {
             //如果检查到红包已经领用则返回处理
             boolean hasNodes = hasOneOfThoseNodes(
-                    WECHAT_BETTER_LUCK_CH,WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH);
+                    WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH);
             if (hasNodes) {
                 performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
                 currentNotification = null;
                 return true;
-            }
-            else{
+            } else {
                 //打开的按钮6.5.8是bii,6.5.7是bfw
                 List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bfw");
                 if (hbAmounts != null && !hbAmounts.isEmpty()) {
                     AccessibilityNodeInfo hbAmount = hbAmounts.get(0);
                     lastHb.SetHbAmount(hbAmount.getText().toString());
-                    Log.i(TAG,"红包大小："+lastHb.GetHbAmount());
+                    Log.i(TAG, "红包大小：" + lastHb.GetHbAmount());
                     performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
                     currentNotification = null;
                     return true;
@@ -599,13 +618,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             if (event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
                 // Log.i(TAG, "TYPE_NOTIFICATION_STATE_CHANGED");
                 //只有在监听阶段，的内容消息才认可处理。
-
                 if (!bIgnoreNotify && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
                     synchronized (this) {
                         Notification notification = (Notification) event.getParcelableData();
                         String content = notification.tickerText.toString();
+                        Log.i(TAG, "通知栏消息:" + content);
                         if (content.contains("[微信红包]")) {
-                            Log.i(TAG, "通知栏消息:" + content);
                             currentNotifications.add((Notification) event.getParcelableData());
                         }
                     }
@@ -876,7 +894,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private void uploadHbInfo() throws JSONException {
         final ContentValues values = new ContentValues();
         String group_name = lastHb.GetChatWindowTitle();
-        if(group_name.lastIndexOf("(")!=-1) {
+        if (group_name.lastIndexOf("(") != -1) {
             group_name = group_name.substring(0, group_name.lastIndexOf("("));
         }
         values.put("group_name", group_name);
@@ -937,7 +955,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
         if (!postcontent.equals("")) {
             try {
-                HttpUtils.doPostAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" +postcontent, new HttpUtils.CallBack() {
+                HttpUtils.doPostAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" + postcontent, new HttpUtils.CallBack() {
                     @Override
                     public void onRequestComplete(String result) {
                         try {
