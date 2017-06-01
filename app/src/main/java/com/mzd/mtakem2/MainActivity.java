@@ -1,21 +1,35 @@
 package com.mzd.mtakem2;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.mzd.mtakem2.utils.ComFunc;
+import com.mzd.mtakem2.utils.HttpUtils;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements AccessibilityManager.AccessibilityStateChangeListener {
@@ -33,10 +47,10 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
 
         //获得mac地址
         TextView txtMac = (TextView) findViewById(R.id.txtMac);
-        txtMac.setText(getMac());
+        txtMac.setText(ComFunc.getMac());
         //获得版本
         TextView txtVer = (TextView) findViewById(R.id.txtVer);
-        txtVer.setText(getVersion());
+        txtVer.setText(ComFunc.getVersion(this));
 
         pluginStatusText = (TextView) findViewById(R.id.textView3);
         pluginStatusIcon = (ImageView) findViewById(R.id.imageView);
@@ -47,32 +61,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         updateServiceStatus();
     }
 
-    /*
-        获得手机Mac码
-     */
-    private String getMac() {
-        String macSerial = null;
-        String str = "";
-        try {
-            Process pp = Runtime.getRuntime().exec(
-                    "cat /sys/class/net/wlan0/address ");
-            InputStreamReader ir = new InputStreamReader(pp.getInputStream());
-            LineNumberReader input = new LineNumberReader(ir);
 
-
-            for (; null != str; ) {
-                str = input.readLine();
-                if (str != null) {
-                    macSerial = str.trim();// 去空格
-                    break;
-                }
-            }
-        } catch (IOException ex) {
-            // 赋予默认值
-            ex.printStackTrace();
-        }
-        return macSerial;
-    }
 
     //打开无障碍设置
     public void openAccessibility(View view) {
@@ -91,28 +80,12 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     }
 
     //检查更新
-    public void openCheckUpdate(View view) {
-        /*
-        // declare the dialog as a member field of your activity
-        ProgressDialog mProgressDialog;
-        // instantiate it within the onCreate method
-        mProgressDialog = new ProgressDialog(MainActivity.this);
-        mProgressDialog.setMessage(getString(R.string.download_processing));
-        mProgressDialog.setIndeterminate(true);
-        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        mProgressDialog.setCancelable(true);
-        // execute this when the downloader must be fired
-        final UpdateTask downloadTask = new UpdateTask(getApplicationContext(), mProgressDialog);
-       // downloadTask.execute("http://dlsw.baidu.com/sw-search-sp/soft/4e/30195/Git-2.7.2-32-bit_setup.1457942412.exe");
-        mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                downloadTask.cancel(true);
-            }
-        });*/
+    public void openCheckUpdate(View view) throws Exception {
+
         Intent updateIntent = new Intent(this, UpdateActivity.class);
         startActivity(updateIntent);
-
+      //  HbHistory hb = new HbHistory(this);
+      //  hb.deleteDatabase(this);
     }
 
     /**
@@ -144,26 +117,10 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         return false;
     }
 
-    /**
-     * 2  * 获取版本号
-     * 3  * @return 当前应用的版本号
-     * 4
-     */
-    public String getVersion() {
-        try {
-            PackageManager manager = this.getPackageManager();
-            PackageInfo info = manager.getPackageInfo(this.getPackageName(), 0);
-            String version = info.versionName;
-            return version;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return this.getString(R.string.can_not_find_version_name);
-        }
-    }
+
 
 
     public boolean checkVersion(String url){
-
 
         return false;
     }
@@ -172,6 +129,5 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     public void onAccessibilityStateChanged(boolean enabled) {
         updateServiceStatus();
     }
-
 
 }
