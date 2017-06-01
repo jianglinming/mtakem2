@@ -34,7 +34,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
@@ -387,51 +391,61 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
 
     private boolean chatListCheck(AccessibilityNodeInfo nd) {
-        //6.5.7是afx,6.5.8变为agy
-        List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/afx");
-        AccessibilityNodeInfo findNode = null;
-        for (int i = 0; i < nodeInfos1.size(); i++) {
-            if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
-                findNode = nodeInfos1.get(i);
-                break;
-            }
-        }
-        if (findNode != null) {
-            if (findNode != null && findNode.getParent() != null && findNode.getParent().getParent() != null && findNode.getParent().getParent().getParent() != null && findNode.getParent().getParent().getParent().getParent() != null) {
-                AccessibilityNodeInfo clickableParentNode = findNode.getParent().getParent().getParent().getParent();
-                //如果有新消息提醒的话，就点击这个可以用android studio 中的adm的"Dump View hierarchy for UI Automator"层次关系
-                if (clickableParentNode.getChild(0).getChildCount() > 1) {
-                    nStatusCounter = 0;
-                    clickableParentNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    return true;
+        try {
+            //6.5.7是afx,6.5.8变为agy
+            List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/afx");
+            AccessibilityNodeInfo findNode = null;
+            for (int i = 0; i < nodeInfos1.size(); i++) {
+                if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
+                    findNode = nodeInfos1.get(i);
+                    break;
                 }
-
             }
+            if (findNode != null) {
+                if (findNode != null && findNode.getParent() != null && findNode.getParent().getParent() != null && findNode.getParent().getParent().getParent() != null && findNode.getParent().getParent().getParent().getParent() != null) {
+                    AccessibilityNodeInfo clickableParentNode = findNode.getParent().getParent().getParent().getParent();
+                    //如果有新消息提醒的话，就点击这个可以用android studio 中的adm的"Dump View hierarchy for UI Automator"层次关系
+                    if (clickableParentNode.getChild(0).getChildCount() > 1) {
+                        nStatusCounter = 0;
+                        clickableParentNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        return true;
+                    }
+
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         return false;
     }
 
     private boolean notifyCheck(AccessibilityNodeInfo nd) {
-        synchronized (this) {
-            if (!currentNotifications.isEmpty()) {
-                currentNotification = currentNotifications.get(0);
-                currentNotifications.remove(0);
+        try {
+            synchronized (this) {
+                if (!currentNotifications.isEmpty()) {
+                    currentNotification = currentNotifications.get(0);
+                    currentNotifications.remove(0);
+                }
             }
-        }
-        if (currentNotification != null) {
-            PendingIntent pendingIntent = currentNotification.contentIntent;
-            try {
-                pendingIntent.send();
-                NotificationManager notificationManager
-                        = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (currentNotification != null) {
+                PendingIntent pendingIntent = currentNotification.contentIntent;
+                try {
+                    pendingIntent.send();
+                    NotificationManager notificationManager
+                            = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
-                currentNotification = null;
-                return true;
-            } catch (PendingIntent.CanceledException e) {
-                e.printStackTrace();
+                    currentNotification = null;
+                    return true;
+                } catch (PendingIntent.CanceledException e) {
+                    e.printStackTrace();
+                }
             }
+            currentNotification = null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-        currentNotification = null;
         return false;
     }
 
@@ -927,7 +941,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         values.put("notify_consuming", notify_detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - notify_detect_tm : 0);
         values.put("chatlist_consuming", chatlist_detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - chatlist_detect_tm : 0);
         values.put("chatwindow_consuming", detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - detect_tm : 0);
-        JSONObject obj = new JSONObject();
+        final JSONObject obj = new JSONObject();
         JSONArray array = new JSONArray();
         JSONObject item = new JSONObject();
 
@@ -946,65 +960,57 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         obj.put("total", 1);
         obj.put("rows", array);
 
-        /*
-        //不管服务端的设置输出是gkb，还是UTF-8，get这种方法都必须经过下面的编码转换
-        byte tmp[] = obj.toString().getBytes("utf-8");
-        String sendStr = new String(tmp,"gbk");
-        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo&strHbInfo="+URLEncoder.encode(sendStr.toString(),"gbk") , new HttpUtils.CallBack() {
+        //创建后台线程，获取远程版本
+        new Thread(new Runnable() {
             @Override
-            public void onRequestComplete(String result) {
+            public void run() {
+                HttpURLConnection conn = null;
                 try {
-                   //服务端返回需要对字符进行encode处理，才不会乱码。
-                    Log.i("main",URLDecoder.decode(result,"gbk"));
-                }
-                catch (Exception e){
-
-                }
-
-
-            }
-        });*/
-
-        //post方法，就不用对字符串进行变换
-        String postcontent = "";
-        try {
-            //Log.i(TAG,obj.toString());
-            postcontent = URLEncoder.encode(obj.toString(), "gbk");
-        } catch (Exception e) {
-            postcontent = "";
-        }
-
-        if (!postcontent.equals("")) {
-            try {
-                HttpUtils.doPostAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" + postcontent, new HttpUtils.CallBack() {
-                    @Override
-                    public void onRequestComplete(String result) {
-                        try {
-                            String resp = URLDecoder.decode(result, "gbk");
-                            Log.i("main", resp);
-                            JSONObject obj = new JSONObject(resp);
-                            if (obj.getBoolean("result")) {
-
-                            } else {
-                                //报告插入失败，将红包存在本地
-                                HbHistory hb = new HbHistory(getApplicationContext());
-                                hb.insert(values);
-                            }
-                        } catch (Exception e) {
-                            //回复错误信息也插入数据库
-                            HbHistory hb = new HbHistory(getApplicationContext());
-                            hb.insert(values);
-                        }
+                    byte tmp[] = obj.toString().getBytes("utf-8");
+                    String sendStr = new String(tmp, "gbk");
+                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo&strHbInfo=" + URLEncoder.encode(sendStr.toString(), "gbk"));
+                    conn = (HttpURLConnection) url
+                            .openConnection();
+                    //使用GET方法获取
+                    conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(5000);
+                    int code = conn.getResponseCode();
+                    if (code == 200) {
+                        InputStream is = conn.getInputStream();
+                        String result = readMyInputStream(is);
+                        Log.i(TAG, URLDecoder.decode(result, "gbk"));
                     }
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                //通信失败也存在本地
-                HbHistory hb = new HbHistory(getApplicationContext());
-                hb.insert(values);
-            }
-        }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (conn != null) conn.disconnect();
+                }
 
+            }
+        }).start();
+
+    }
+
+
+    private String readMyInputStream(InputStream is) {
+        byte[] result;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, len);
+            }
+            is.close();
+            baos.close();
+            result = baos.toByteArray();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            String errorStr = "获取数据失败。";
+            return errorStr;
+        }
+        return new String(result);
     }
 
 }
