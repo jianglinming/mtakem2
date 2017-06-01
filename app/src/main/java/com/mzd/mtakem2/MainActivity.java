@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Message;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -24,16 +25,23 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements AccessibilityManager.AccessibilityStateChangeListener {
 
+    private static final String TAG = "MainActivity";
     //开关切换按钮
     private TextView pluginStatusText;
     private ImageView pluginStatusIcon;
@@ -62,7 +70,6 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     }
 
 
-
     //打开无障碍设置
     public void openAccessibility(View view) {
         try {
@@ -82,10 +89,14 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     //检查更新
     public void openCheckUpdate(View view) throws Exception {
 
-        Intent updateIntent = new Intent(this, UpdateActivity.class);
-        startActivity(updateIntent);
-      //  HbHistory hb = new HbHistory(this);
-      //  hb.deleteDatabase(this);
+            Intent updateIntent = new Intent(this, UpdateActivity.class);
+            startActivity(updateIntent);
+        //  HbHistory hb = new HbHistory(this);
+        //  hb.deleteDatabase(this);
+        //       uploadHbInfo();
+
+
+
     }
 
     /**
@@ -118,9 +129,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     }
 
 
-
-
-    public boolean checkVersion(String url){
+    public boolean checkVersion(String url) {
 
         return false;
     }
@@ -129,5 +138,6 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     public void onAccessibilityStateChanged(boolean enabled) {
         updateServiceStatus();
     }
+
 
 }

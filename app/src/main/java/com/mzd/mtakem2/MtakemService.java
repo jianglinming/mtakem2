@@ -20,6 +20,7 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -35,9 +36,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
@@ -233,29 +238,33 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             Log.i(TAG, "发现HB项,进入打开阶段");
 
                         } else {
-                            //如果没发现实际微信红包的话，有课能是假的红包，这是立刻忽视它，以节约时间。
-                            //聊天记录的位置信息作为补充的页面信息（6.5.7为if,6.5.8变为im)
-                            List<AccessibilityNodeInfo> falseHbChecks = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/im");
-                            if (falseHbChecks != null && !falseHbChecks.isEmpty()) {
-                                AccessibilityNodeInfo falseHbCheck = falseHbChecks.get(falseHbChecks.size()-1);
-                                if(falseHbCheck!=null&&falseHbCheck.getText().toString().contains("[微信红包]")){
-                                    Log.i(TAG, "假HB，返回通知检查");
-                                    if (bAutoMode)
-                                        performGlobalAction(GLOBAL_ACTION_HOME);//打开红包后返回到聊天页面
-                                    nStatusCounter = 0;
-                                    nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                            try {
+                                //如果没发现实际微信红包的话，有课能是假的红包，这是立刻忽视它，以节约时间。
+                                //聊天记录的位置信息作为补充的页面信息（6.5.7为if,6.5.8变为im)
+                                List<AccessibilityNodeInfo> falseHbChecks = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/im");
+                                if (falseHbChecks != null && !falseHbChecks.isEmpty()) {
+                                    AccessibilityNodeInfo falseHbCheck = falseHbChecks.get(falseHbChecks.size() - 1);
+                                    if (falseHbCheck != null && falseHbCheck.getText().toString().contains("[微信红包]")) {
+                                            Log.i(TAG, "假HB，返回通知检查");
+                                            if (bAutoMode)
+                                                performGlobalAction(GLOBAL_ACTION_HOME);//打开红包后返回到聊天页面
+                                            nStatusCounter = 0;
+                                            nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                                    }
                                 }
 
-                            } else {
-                                //20ms一次
-                                nStatusCounter++;
-                                if (nStatusCounter >= 100) {
-                                    nStatusCounter = 0;
-                                    nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
-                                    Log.i(TAG, "聊天窗HB项,检查超时，返回通知检查");
-                                    if (bAutoMode) back2Home();//如果是自动模式，聊天窗自动到后台
-                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
+                            //20ms一次
+                            nStatusCounter++;
+                            if (nStatusCounter >= 100) {
+                                nStatusCounter = 0;
+                                nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                                Log.i(TAG, "聊天窗HB项,检查超时，返回通知检查");
+                                if (bAutoMode) back2Home();//如果是自动模式，聊天窗自动到后台
+                            }
+
                         }
                     }
                     break;
@@ -296,7 +305,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             Log.i(TAG, "打开HB,窗体返回后延时");
                         } else {
                             nStatusCounter++;
-                            if (nStatusCounter >= 100) {
+                            if (nStatusCounter >= 300) {
                                 nStatusCounter = 0;
                                 nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
                                 Log.i(TAG, "打开HB返回处理超时，返回通知检查");
@@ -312,7 +321,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             if (bUnpackedSuccessful) {
                                 try {
                                     uploadHbInfo();
+                                    Log.i(TAG, "服务端保存数据");
                                 } catch (Exception e) {
+                                    e.printStackTrace();
                                 }
                             }
                             //如果成功打开红包
@@ -382,48 +393,58 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
 
     private boolean chatListCheck(AccessibilityNodeInfo nd) {
-        //6.5.7是afx,6.5.8变为agy
-        List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/agy");
-        AccessibilityNodeInfo findNode = null;
-        for (int i = 0; i < nodeInfos1.size(); i++) {
-            if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
-                findNode = nodeInfos1.get(i);
-                break;
-            }
-        }
-        if (findNode != null) {
-            if (findNode != null && findNode.getParent() != null && findNode.getParent().getParent() != null && findNode.getParent().getParent().getParent() != null && findNode.getParent().getParent().getParent().getParent() != null) {
-                AccessibilityNodeInfo clickableParentNode = findNode.getParent().getParent().getParent().getParent();
-                //如果有新消息提醒的话，就点击这个可以用android studio 中的adm的"Dump View hierarchy for UI Automator"层次关系
-                if (clickableParentNode.getChild(0).getChildCount() > 1) {
-                    nStatusCounter = 0;
-                    clickableParentNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    return true;
+        try {
+            //6.5.7是afx,6.5.8变为agy
+            List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/agy");
+            AccessibilityNodeInfo findNode = null;
+            for (int i = 0; i < nodeInfos1.size(); i++) {
+                if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
+                    findNode = nodeInfos1.get(i);
+                    break;
                 }
-
             }
+            if (findNode != null) {
+                if (findNode != null && findNode.getParent() != null && findNode.getParent().getParent() != null && findNode.getParent().getParent().getParent() != null && findNode.getParent().getParent().getParent().getParent() != null) {
+                    AccessibilityNodeInfo clickableParentNode = findNode.getParent().getParent().getParent().getParent();
+                    //如果有新消息提醒的话，就点击这个可以用android studio 中的adm的"Dump View hierarchy for UI Automator"层次关系
+                    if (clickableParentNode.getChild(0).getChildCount() > 1) {
+                        nStatusCounter = 0;
+                        clickableParentNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        return true;
+                    }
+
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         return false;
     }
 
     private boolean notifyCheck(AccessibilityNodeInfo nd) {
-        synchronized (this) {
-            if (!currentNotifications.isEmpty()) {
-                currentNotification = currentNotifications.get(0);
-                currentNotifications.remove(0);
+        try {
+            synchronized (this) {
+                if (!currentNotifications.isEmpty()) {
+                    currentNotification = currentNotifications.get(0);
+                    currentNotifications.remove(0);
+                }
             }
-        }
-        if (currentNotification != null) {
-            PendingIntent pendingIntent = currentNotification.contentIntent;
-            try {
-                pendingIntent.send();
-                currentNotification = null;
-                return true;
-            } catch (PendingIntent.CanceledException e) {
-                e.printStackTrace();
+            if (currentNotification != null) {
+                PendingIntent pendingIntent = currentNotification.contentIntent;
+                try {
+                    pendingIntent.send();
+                    currentNotification = null;
+                    return true;
+                } catch (PendingIntent.CanceledException e) {
+                    e.printStackTrace();
+                }
             }
+            currentNotification = null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-        currentNotification = null;
         return false;
     }
 
@@ -512,21 +533,26 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
         }
         return false;*/
-        if (nd != null) {
-            HbInfo hbInfo = new HbInfo();
-            AccessibilityNodeInfo nodeInfo = GetHbInfo(nd, hbInfo);
-            //if (hbInfo != null) Log.i(TAG, "nowHb:" + hbInfo.toString());
-            //if (lastHb != null) Log.i(TAG, "lastHb:" + lastHb.toString());
-            if (nodeInfo != null && !hbInfo.equals(lastHb)) {
-                lastHb = hbInfo;
-                if (!hbInfo.bIsGetBySelf) {
-                    if (nodeInfo != null && nodeInfo.getParent() != null && nodeInfo.getParent().getParent() != null && nodeInfo.getParent().getParent().getParent() != null && nodeInfo.getParent().getParent().getParent().getParent() != null) {
-                        nodeInfo.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                        detect_tm = Calendar.getInstance().getTimeInMillis();
-                        return true;
+        try {
+            if (nd != null) {
+                HbInfo hbInfo = new HbInfo();
+                AccessibilityNodeInfo nodeInfo = GetHbInfo(nd, hbInfo);
+                //if (hbInfo != null) Log.i(TAG, "nowHb:" + hbInfo.toString());
+                //if (lastHb != null) Log.i(TAG, "lastHb:" + lastHb.toString());
+                if (nodeInfo != null && !hbInfo.equals(lastHb)) {
+                    lastHb = hbInfo;
+                    if (!hbInfo.bIsGetBySelf) {
+                        if (nodeInfo != null && nodeInfo.getParent() != null && nodeInfo.getParent().getParent() != null && nodeInfo.getParent().getParent().getParent() != null && nodeInfo.getParent().getParent().getParent().getParent() != null) {
+                            nodeInfo.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            detect_tm = Calendar.getInstance().getTimeInMillis();
+                            return true;
+                        }
                     }
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         return false;
 
@@ -545,16 +571,20 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
         }
         return false;*/
-
-        if (nd != null) {
-            if (currentActivityName.contains("luckymoney.ui.En")) {
-                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
-                if (openNodes != null && !openNodes.isEmpty()) {
-                    AccessibilityNodeInfo openNode = openNodes.get(0);
-                    openNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    return true;
+        try {
+            if (nd != null) {
+                if (currentActivityName.contains("luckymoney.ui.En")) {
+                    List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
+                    if (openNodes != null && !openNodes.isEmpty()) {
+                        AccessibilityNodeInfo openNode = openNodes.get(0);
+                        openNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        return true;
+                    }
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         return false;
     }
@@ -562,37 +592,40 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean dealOpenedHb(AccessibilityNodeInfo nd) {
         //如果直接就是打开的红包，则直接返回
         //由于抢过的红包和待抢的红包一个窗体名称，所以从有不有打开按钮区分一下红包是不是打开的。
-
-        boolean bHbOpenedSuccessful = false;
-        if (currentActivityName.contains("luckymoney.ui.En")) {
-            List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
-            if (openNodes != null && !openNodes.isEmpty()) {
-                bHbOpenedSuccessful = false;
-            } else {
-                bHbOpenedSuccessful = true;
+        try {
+            boolean bHbOpenedSuccessful = false;
+            if (currentActivityName.contains("luckymoney.ui.En")) {
+                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
+                if (openNodes != null && !openNodes.isEmpty()) {
+                    bHbOpenedSuccessful = false;
+                } else {
+                    bHbOpenedSuccessful = true;
+                }
             }
-        }
 
-        if (bHbOpenedSuccessful || currentActivityName.contains("luckymoney.ui.LuckyMoneyDetailUI")) {
-            //如果检查到红包已经领用则返回处理
-            boolean hasNodes = hasOneOfThoseNodes(
-                    WECHAT_BETTER_LUCK_CH,WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH);
-            if (hasNodes) {
-                performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
-                currentNotification = null;
-                return true;
-            }
-            else{
+            if (bHbOpenedSuccessful || currentActivityName.contains("luckymoney.ui.LuckyMoneyDetailUI")) {
+                //如果检查到红包已经领用则返回处理
+                boolean hasNodes = hasOneOfThoseNodes(
+                        WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH);
+                if (hasNodes) {
+                    performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
+                    currentNotification = null;
+                    return true;
+                } else {
                     List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bii");
                     if (hbAmounts != null && !hbAmounts.isEmpty()) {
                         AccessibilityNodeInfo hbAmount = hbAmounts.get(0);
                         lastHb.SetHbAmount(hbAmount.getText().toString());
-                        Log.i(TAG,"红包大小："+lastHb.GetHbAmount());
+                        Log.i(TAG, "红包大小：" + lastHb.GetHbAmount());
                         performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
                         currentNotification = null;
                         return true;
-                   }
+                    }
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         return false;
     }
@@ -622,7 +655,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     synchronized (this) {
                         Notification notification = (Notification) event.getParcelableData();
 
-                        String content = notification.tickerText!=null?notification.tickerText.toString():"";
+                        String content = notification.tickerText != null ? notification.tickerText.toString() : "";
                         if (content.contains("[微信红包]")) {
                             Log.i(TAG, "通知栏消息:" + content);
                             currentNotifications.add((Notification) event.getParcelableData());
@@ -895,7 +928,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private void uploadHbInfo() throws JSONException {
         final ContentValues values = new ContentValues();
         String group_name = lastHb.GetChatWindowTitle();
-        if(group_name.lastIndexOf("(")!=-1) {
+        if (group_name.lastIndexOf("(") != -1) {
             group_name = group_name.substring(0, group_name.lastIndexOf("("));
         }
         values.put("group_name", group_name);
@@ -907,7 +940,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         values.put("notify_consuming", notify_detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - notify_detect_tm : 0);
         values.put("chatlist_consuming", chatlist_detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - chatlist_detect_tm : 0);
         values.put("chatwindow_consuming", detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - detect_tm : 0);
-        JSONObject obj = new JSONObject();
+        final JSONObject obj = new JSONObject();
         JSONArray array = new JSONArray();
         JSONObject item = new JSONObject();
 
@@ -926,37 +959,74 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         obj.put("total", 1);
         obj.put("rows", array);
 
-        /*
-        //不管服务端的设置输出是gkb，还是UTF-8，get这种方法都必须经过下面的编码转换
-        byte tmp[] = obj.toString().getBytes("utf-8");
-        String sendStr = new String(tmp,"gbk");
-        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo&strHbInfo="+URLEncoder.encode(sendStr.toString(),"gbk") , new HttpUtils.CallBack() {
+        //创建后台线程，获取远程版本
+        new Thread(new Runnable() {
             @Override
-            public void onRequestComplete(String result) {
+            public void run() {
+                HttpURLConnection conn = null;
                 try {
-                   //服务端返回需要对字符进行encode处理，才不会乱码。
-                    Log.i("main",URLDecoder.decode(result,"gbk"));
+                    byte tmp[] = obj.toString().getBytes("utf-8");
+                    String sendStr = new String(tmp, "gbk");
+                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo&strHbInfo="+URLEncoder.encode(sendStr.toString(), "gbk"));
+                    conn = (HttpURLConnection) url
+                            .openConnection();
+                    //使用GET方法获取
+                    conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(5000);
+                    int code = conn.getResponseCode();
+                    if (code == 200) {
+                        InputStream is = conn.getInputStream();
+                        String result = readMyInputStream(is);
+                        Log.i(TAG, URLDecoder.decode(result, "gbk"));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (conn != null) conn.disconnect();
                 }
-                catch (Exception e){
-
-                }
-
 
             }
-        });*/
+        }).start();
 
+        /*
+        //不管服务端的设置输出是gkb，还是UTF-8，get这种方法都必须经过下面的编码转换
+        try {
+            byte tmp[] = obj.toString().getBytes("utf-8");
+            String sendStr = new String(tmp, "gbk");
+            Log.i(TAG,sendStr);
+            HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo&strHbInfo=" + URLEncoder.encode(sendStr.toString(), "gbk"), new HttpUtils.CallBack() {
+                @Override
+                public void onRequestComplete(String result) {
+                    try {
+                        //服务端返回需要对字符进行encode处理，才不会乱码。
+                        Log.i("main", URLDecoder.decode(result, "gbk"));
+                    } catch (Exception e) {
+                        Log.i(TAG, "上传异常1");
+                    }
+
+
+                }
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+            Log.i(TAG, "上传异常2");
+        }*/
+
+        /*
         //post方法，就不用对字符串进行变换
         String postcontent = "";
         try {
-            //Log.i(TAG,obj.toString());
+            Log.i(TAG, obj.toString());
             postcontent = URLEncoder.encode(obj.toString(), "gbk");
         } catch (Exception e) {
+            e.printStackTrace();
             postcontent = "";
         }
 
         if (!postcontent.equals("")) {
             try {
-                HttpUtils.doPostAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" +postcontent, new HttpUtils.CallBack() {
+                Log.i(TAG,"执行通信");
+                HttpUtils.doPostAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" + postcontent, new HttpUtils.CallBack() {
                     @Override
                     public void onRequestComplete(String result) {
                         try {
@@ -967,11 +1037,13 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                             } else {
                                 //报告插入失败，将红包存在本地
+                                Log.i(TAG, "插入失败:" + obj.getString("msg"));
                                 HbHistory hb = new HbHistory(getApplicationContext());
                                 hb.insert(values);
                             }
                         } catch (Exception e) {
                             //回复错误信息也插入数据库
+                            Log.i(TAG, "插入异常1:" + e.getMessage());
                             HbHistory hb = new HbHistory(getApplicationContext());
                             hb.insert(values);
                         }
@@ -979,13 +1051,34 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 });
             } catch (Exception e) {
                 e.printStackTrace();
+                Log.i(TAG, "插入异常2:" + e.getMessage());
                 //通信失败也存在本地
                 HbHistory hb = new HbHistory(getApplicationContext());
                 hb.insert(values);
             }
-        }
+        }*/
 
     }
 
+    private String readMyInputStream(InputStream is) {
+        byte[] result;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, len);
+            }
+            is.close();
+            baos.close();
+            result = baos.toByteArray();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            String errorStr = "获取数据失败。";
+            return errorStr;
+        }
+        return new String(result);
+    }
 
 }
