@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
@@ -45,6 +46,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Vector;
 
 /**
  * Created by Administrator on 2017/5/8.
@@ -75,6 +77,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
 
     private Handler handler = new Handler();
+    private Handler handler1 = new Handler();
     private SharedPreferences sharedPreferences;
 
     private static final int NSTATUS_CHECKNOTIFYSANDCONTENT = 1;
@@ -125,6 +128,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         Log.i(TAG, "Dev:" + device_model);
         Log.i(TAG, "VERSION:" + version_release);
         handler.postDelayed(runnable, 2000);
+        handler1.postDelayed(runnable1, 3000);//轮询本地数据库又不有保存HB信息，还有就上传
 
         //动态增加FLAG配置，注意这非常重要，这个将使得能获取窗体的全部完整的节点。
         AccessibilityServiceInfo info = getServiceInfo();
@@ -389,6 +393,88 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
     };
 
+    /*
+           检查数据库定时任务，是否有HB数据,如果有就一次性全部上传
+        */
+    private Runnable runnable1 = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                final HbHistory hb = new HbHistory(getApplicationContext());
+                final JSONObject obj = new JSONObject();
+                JSONArray array = new JSONArray();
+                final Vector v = new Vector();
+                int total = 0;
+                try {
+                    Cursor c = hb.query();
+                    int i = 0;
+                    for (i = 0; i < 10; i++) {
+                        JSONObject item = new JSONObject();
+                        if (c.moveToNext()) {
+                            item.put("device", device_model + "(" + version_release + ")");
+                            item.put("machine_id", mac);
+                            item.put("mtakem2ver", app_ver);
+                            int j = 0;
+                            for (j = 0; j < c.getColumnCount(); j++) {
+                                item.put(c.getColumnName(j), c.getString(j));
+                            }
+                            v.add(c.getInt(c.getColumnIndex("id")));
+                            array.put(item);
+                            total++;
+                        } else {
+                            break;
+                        }
+                    }
+                    obj.put("total", total);
+                    obj.put("rows", array);
+                    Log.i(TAG, obj.toString());
+                    c.close();
+                } catch (Exception e) {
+                    total = 0;
+                    e.printStackTrace();
+                }
+
+                //如果数据库有数据就上传
+                if (total != 0) {
+                    try {
+                        HttpUtils.doPostAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" + URLEncoder.encode(obj.toString(), "gbk"), new HttpUtils.CallBack() {
+                            @Override
+                            public void onRequestComplete(String result) {
+                                boolean bUploadSuccessful = false;
+                                try {
+                                    Log.i(TAG, URLDecoder.decode(result, "gbk"));
+                                    JSONObject objResult = new JSONObject(URLDecoder.decode(result, "gbk"));
+                                    if (objResult.getBoolean("result")) {
+                                        bUploadSuccessful = true;
+                                        Log.i(TAG, "上传成功:" + objResult.getString("msg"));
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                //如果上传成功就，删除对应的数据库项
+                                if (bUploadSuccessful) {
+                                    Log.i(TAG, "上传成功");
+                                    int i = 0;
+                                    for (i = 0; i < v.size(); i++) {
+                                        hb.delete((int) v.get(i));
+                                    }
+                                } else {
+                                    Log.i(TAG, "上传失败");
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                hb.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            handler1.postDelayed(this, 60000);
+        }
+    };
 
     private boolean chatListCheck(AccessibilityNodeInfo nd) {
         try {
@@ -965,10 +1051,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             @Override
             public void run() {
                 HttpURLConnection conn = null;
+                boolean bUploadSuccessful = false;
                 try {
-                    byte tmp[] = obj.toString().getBytes("utf-8");
-                    String sendStr = new String(tmp, "gbk");
-                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo&strHbInfo=" + URLEncoder.encode(sendStr.toString(), "gbk"));
+                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo&strHbInfo=" + URLEncoder.encode(obj.toString(), "utf-8"));
                     conn = (HttpURLConnection) url
                             .openConnection();
                     //使用GET方法获取
@@ -979,11 +1064,24 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         InputStream is = conn.getInputStream();
                         String result = readMyInputStream(is);
                         Log.i(TAG, URLDecoder.decode(result, "gbk"));
+                        JSONObject objResult = new JSONObject(URLDecoder.decode(result, "gbk"));
+                        if (objResult.getBoolean("result")) {
+                            bUploadSuccessful = true;
+                            Log.i(TAG, "上传成功:" + objResult.getString("msg"));
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
                     if (conn != null) conn.disconnect();
+                }
+
+                //如果上传失败的话，则保存在本地数据库
+                if (!bUploadSuccessful) {
+                    HbHistory hb = new HbHistory(getApplicationContext());
+                    hb.insert(values);
+                    hb.close();
+                    Log.i(TAG, "上传失败,保存到本地数据库");
                 }
 
             }
