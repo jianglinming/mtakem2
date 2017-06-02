@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mzd.mtakem2"
-    android:versionCode="1"
-    android:versionName="v2.0.0.20170601_beta">
+    android:versionCode="2"
+    android:versionName="v2.0.0.20170602_beta">
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.INTERNET" />
