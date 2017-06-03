@@ -111,6 +111,27 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     String device_model = Build.MODEL; // 设备型号 。
     String version_release = Build.VERSION.RELEASE; // 设备的系统版本 。
 
+    //聊天窗中的讲话按钮，用来区分当前页面是聊天窗口，还是聊天列表窗口
+    // 6.5.7：a3_  ,6.5.8:a47
+    private static final String SOUNDBUTTON_STRING_ID = "com.tencent.mm:id/a47";
+
+    //聊天窗口的标题信息，标识了所在的群或者聊天对象
+    //6.5.7:gh , 6.5.8:gp
+    private static final String WINDOWTITLETEXT_STRING_ID = "com.tencent.mm:id/gp";
+
+    //聊天的文本控件ID
+    // 6.5.7:if  , 6.5.8:im
+    private static final String WINDOWCHATTEXT_STRING_ID = "com.tencent.mm:id/im";
+
+    //聊天信息中的时间标签ID
+    //6.5.7:t , 6.5.8:t (没变化）
+    private static final String WINDOWCHATTTIME_STRING_ID = "com.tencent.mm:id/t";
+
+    //聊天列表中的最后文本信息
+    //6.5.7:afx , 6.5.8:agy
+    private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/agy";
+
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -180,7 +201,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     else bWxforeground = false;
                     //判断微信处在聊天窗口还是聊天列表窗口。/a3_这个资源列表，聊天窗那个喇叭(wx6.5.7)
                     //6.5.8变为a47
-                    List<AccessibilityNodeInfo> tmpnds = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/a47");
+                    List<AccessibilityNodeInfo> tmpnds = nd.findAccessibilityNodeInfosByViewId(SOUNDBUTTON_STRING_ID);
                     if (tmpnds.isEmpty()) bChatWindow = false;
                     else bChatWindow = true;
                 }
@@ -246,7 +267,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             try {
                                 //如果没发现实际微信红包的话，有课能是假的红包，这是立刻忽视它，以节约时间。
                                 //聊天记录的位置信息作为补充的页面信息（6.5.7为if,6.5.8变为im)
-                                List<AccessibilityNodeInfo> falseHbChecks = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/im");
+                                List<AccessibilityNodeInfo> falseHbChecks = nd.findAccessibilityNodeInfosByViewId(WINDOWCHATTEXT_STRING_ID);
                                 if (falseHbChecks != null && !falseHbChecks.isEmpty()) {
                                     AccessibilityNodeInfo falseHbCheck = falseHbChecks.get(falseHbChecks.size() - 1);
                                     if (falseHbCheck != null && falseHbCheck.getText().toString().contains("[微信红包]")) {
@@ -484,7 +505,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean chatListCheck(AccessibilityNodeInfo nd) {
         try {
             //6.5.7是afx,6.5.8变为agy
-            List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/agy");
+            List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId( CHATLISTTEXT_STRING_ID );
             AccessibilityNodeInfo findNode = null;
             for (int i = 0; i < nodeInfos1.size(); i++) {
                 if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
@@ -543,7 +564,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         try {
             String contextString = "";
             //聊天窗口的标题(6.5.7为gh,6.5.8改为gp)
-            List<AccessibilityNodeInfo> titleNodes = rn.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/gp");
+            List<AccessibilityNodeInfo> titleNodes = rn.findAccessibilityNodeInfosByViewId( WINDOWTITLETEXT_STRING_ID );
             if (titleNodes != null && !titleNodes.isEmpty()) {
                 hbInfo.SetChatWindowTitle(titleNodes.get(0).getText().toString());
             }
@@ -568,7 +589,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
             if (hbInfo.bIsAHb) {
                 //获取时间
-                List<AccessibilityNodeInfo> tmNodes = rn.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/t");
+                List<AccessibilityNodeInfo> tmNodes = rn.findAccessibilityNodeInfosByViewId( WINDOWCHATTTIME_STRING_ID );
                 if (tmNodes != null && !tmNodes.isEmpty()) {
                     //最后的时间标识红包
                     hbInfo.SetHappendedTime(tmNodes.get(tmNodes.size() - 1).getText().toString());
@@ -577,7 +598,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 }
 
                 //聊天记录的位置信息作为补充的页面信息（6.5.7为if,6.5.8变为im)
-                List<AccessibilityNodeInfo> ifNodes = rn.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/im");
+                List<AccessibilityNodeInfo> ifNodes = rn.findAccessibilityNodeInfosByViewId(WINDOWCHATTEXT_STRING_ID);
                 for (AccessibilityNodeInfo ifNode : ifNodes) {
                     Rect ifRect = new Rect();
                     ifNode.getBoundsInScreen(ifRect);
@@ -949,7 +970,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     /*
             得到当前窗口所有的不管活不活动，或则他的z-index在下面的窗口
      */
-    private ArrayList<AccessibilityNodeInfo> getNodesFromWindows() {
+    /*private ArrayList<AccessibilityNodeInfo> getNodesFromWindows() {
         List<AccessibilityWindowInfo> windows = getWindows();
         ArrayList<AccessibilityNodeInfo> nodes =
                 new ArrayList<AccessibilityNodeInfo>();
@@ -959,7 +980,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
         }
         return nodes;
-    }
+    }*/
 
     /**
      * 判断指定的应用是否在前台运行
