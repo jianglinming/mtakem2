@@ -131,6 +131,13 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     //6.5.7:afx , 6.5.8:agy
     private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/agy";
 
+    //HB打开按钮
+    //6.5.7:bjj , 6.5.8:bm4
+    private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/bm4";
+
+    //HB金额文本按钮
+    //6.5.7:bfw , 6.5.8:bii
+    private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/bii";
 
     @Override
     public void onDestroy() {
@@ -684,7 +691,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         try {
             if (nd != null) {
                 if (currentActivityName.contains("luckymoney.ui.En")) {
-                    List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
+                    List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId( HBOPENBUTTON_STRING_ID );
                     if (openNodes != null && !openNodes.isEmpty()) {
                         AccessibilityNodeInfo openNode = openNodes.get(0);
                         openNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -705,7 +712,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         try {
             boolean bHbOpenedSuccessful = false;
             if (currentActivityName.contains("luckymoney.ui.En")) {
-                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
+                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId( HBOPENBUTTON_STRING_ID );
                 if (openNodes != null && !openNodes.isEmpty()) {
                     bHbOpenedSuccessful = false;
                 } else {
@@ -722,7 +729,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     currentNotification = null;
                     return true;
                 } else {
-                    List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bii");
+                    List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId( HBAMOUNTTEXT_STRING_ID );
                     if (hbAmounts != null && !hbAmounts.isEmpty()) {
                         AccessibilityNodeInfo hbAmount = hbAmounts.get(0);
                         lastHb.SetHbAmount(hbAmount.getText().toString());
