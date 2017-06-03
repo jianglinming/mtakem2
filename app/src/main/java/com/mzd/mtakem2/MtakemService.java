@@ -113,15 +113,15 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     //聊天窗中的讲话按钮，用来区分当前页面是聊天窗口，还是聊天列表窗口
     // 6.5.7：a3_  ,6.5.8:a47
-    private static final String SOUNDBUTTON_STRING_ID = "com.tencent.mm:id/a47";
+    private static final String SOUNDBUTTON_STRING_ID = "com.tencent.mm:id/a3_";
 
     //聊天窗口的标题信息，标识了所在的群或者聊天对象
     //6.5.7:gh , 6.5.8:gp
-    private static final String WINDOWTITLETEXT_STRING_ID = "com.tencent.mm:id/gp";
+    private static final String WINDOWTITLETEXT_STRING_ID = "com.tencent.mm:id/gh";
 
     //聊天的文本控件ID
     // 6.5.7:if  , 6.5.8:im
-    private static final String WINDOWCHATTEXT_STRING_ID = "com.tencent.mm:id/im";
+    private static final String WINDOWCHATTEXT_STRING_ID = "com.tencent.mm:id/if";
 
     //聊天信息中的时间标签ID
     //6.5.7:t , 6.5.8:t (没变化）
@@ -129,8 +129,15 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     //聊天列表中的最后文本信息
     //6.5.7:afx , 6.5.8:agy
-    private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/agy";
+    private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/afx";
 
+    //HB打开按钮
+    //6.5.7:bjj , 6.5.8:bm4
+    private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/bjj";
+
+    //HB金额文本按钮
+    //6.5.7:bfw , 6.5.8:bii
+    private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/bfw";
 
     @Override
     public void onDestroy() {
@@ -684,7 +691,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         try {
             if (nd != null) {
                 if (currentActivityName.contains("luckymoney.ui.En")) {
-                    List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
+                    List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId( HBOPENBUTTON_STRING_ID );
                     if (openNodes != null && !openNodes.isEmpty()) {
                         AccessibilityNodeInfo openNode = openNodes.get(0);
                         openNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -705,7 +712,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         try {
             boolean bHbOpenedSuccessful = false;
             if (currentActivityName.contains("luckymoney.ui.En")) {
-                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bm4");
+                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId( HBOPENBUTTON_STRING_ID );
                 if (openNodes != null && !openNodes.isEmpty()) {
                     bHbOpenedSuccessful = false;
                 } else {
@@ -722,7 +729,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     currentNotification = null;
                     return true;
                 } else {
-                    List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bii");
+                    List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId( HBAMOUNTTEXT_STRING_ID );
                     if (hbAmounts != null && !hbAmounts.isEmpty()) {
                         AccessibilityNodeInfo hbAmount = hbAmounts.get(0);
                         lastHb.SetHbAmount(hbAmount.getText().toString());
