@@ -94,6 +94,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private static final int NSTATUS_RETURNCHECKDELAY = 5;
     private static final int NSTATUS_AUTOREPLY = 6;
     private static final int NSTATUS_AUTOREPLYDELAY = 7;
+    private static final int NSTATUS_OPENNOHBDELAY = 8;
 
 
     private int nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
@@ -216,13 +217,40 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 switch (nStatus) {
                     //通知栏消息检查
                     case NSTATUS_CHECKNOTIFYSANDCONTENT: {
-                        if (notifyCheck(nd)) {
-                            nStatusCounter = 0;
-                            nStatus = NSTATUS_NOTIFYOPENCHATWINDOW;
-                            detect_tm = 0;
-                            notify_detect_tm = Calendar.getInstance().getTimeInMillis();
-                            chatlist_detect_tm = 0;
-                            Log.i(TAG, "查到HB消息,进入聊天窗，检查HB");
+                        synchronized (this) {
+                            if (!currentNotifications.isEmpty()) {
+                                currentNotification = currentNotifications.get(0);
+                                currentNotifications.remove(0);
+                            }
+                        }
+                        if (currentNotification != null) {
+                            PendingIntent pendingIntent = currentNotification.contentIntent;
+                            try {
+                                pendingIntent.send();
+                                String content = currentNotification.tickerText != null ? currentNotification.tickerText.toString() : "";
+                                Log.i(TAG, "通知栏消息:" + content);
+                                if (content.contains("[微信红包]")) {
+                                    nStatusCounter = 0;
+                                    nStatus = NSTATUS_NOTIFYOPENCHATWINDOW;
+                                    detect_tm = 0;
+                                    notify_detect_tm = Calendar.getInstance().getTimeInMillis();
+                                    chatlist_detect_tm = 0;
+                                    Log.i(TAG, "查到HB消息,进入聊天窗，检查HB");
+                                }
+                                else{
+                                    nStatusCounter = 0;
+                                    nStatus = NSTATUS_OPENNOHBDELAY;
+                                    Log.i(TAG, "非HB消息，打开即可");
+                                }
+
+                            } catch (PendingIntent.CanceledException e) {
+                                e.printStackTrace();
+                            }
+                            finally {
+                                currentNotification = null;
+                            }
+
+
                         } else {
                             if (bWxforeground && bContentUpdated) {
                                 bContentUpdated = false;
@@ -408,6 +436,24 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     }
                     break;
 
+                    case NSTATUS_OPENNOHBDELAY: {
+
+                        if (currentActivityName.contains(WECHAT_LUCKMONEY_GENERAL_ACTIVITY)) {
+                            back2Home();
+                            nStatusCounter = 0;
+                            nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                        } else {
+                            nStatusCounter++;
+                            if (nStatusCounter > 100) {
+                                back2Home();
+                                nStatusCounter = 0;
+                                nStatus = NSTATUS_CHECKNOTIFYSANDCONTENT;
+                            }
+                        }
+
+                    }
+                    break;
+
                     //其他，也相当于IDLE
                     default: {
 
@@ -512,7 +558,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean chatListCheck(AccessibilityNodeInfo nd) {
         try {
             //6.5.7是afx,6.5.8变为agy
-            List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId( CHATLISTTEXT_STRING_ID );
+            List<AccessibilityNodeInfo> nodeInfos1 = nd.findAccessibilityNodeInfosByViewId(CHATLISTTEXT_STRING_ID);
             AccessibilityNodeInfo findNode = null;
             for (int i = 0; i < nodeInfos1.size(); i++) {
                 if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
@@ -571,7 +617,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         try {
             String contextString = "";
             //聊天窗口的标题(6.5.7为gh,6.5.8改为gp)
-            List<AccessibilityNodeInfo> titleNodes = rn.findAccessibilityNodeInfosByViewId( WINDOWTITLETEXT_STRING_ID );
+            List<AccessibilityNodeInfo> titleNodes = rn.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
             if (titleNodes != null && !titleNodes.isEmpty()) {
                 hbInfo.SetChatWindowTitle(titleNodes.get(0).getText().toString());
             }
@@ -596,7 +642,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
             if (hbInfo.bIsAHb) {
                 //获取时间
-                List<AccessibilityNodeInfo> tmNodes = rn.findAccessibilityNodeInfosByViewId( WINDOWCHATTTIME_STRING_ID );
+                List<AccessibilityNodeInfo> tmNodes = rn.findAccessibilityNodeInfosByViewId(WINDOWCHATTTIME_STRING_ID);
                 if (tmNodes != null && !tmNodes.isEmpty()) {
                     //最后的时间标识红包
                     hbInfo.SetHappendedTime(tmNodes.get(tmNodes.size() - 1).getText().toString());
@@ -691,7 +737,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         try {
             if (nd != null) {
                 if (currentActivityName.contains("luckymoney.ui.En")) {
-                    List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId( HBOPENBUTTON_STRING_ID );
+                    List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
                     if (openNodes != null && !openNodes.isEmpty()) {
                         AccessibilityNodeInfo openNode = openNodes.get(0);
                         openNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -712,7 +758,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         try {
             boolean bHbOpenedSuccessful = false;
             if (currentActivityName.contains("luckymoney.ui.En")) {
-                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId( HBOPENBUTTON_STRING_ID );
+                List<AccessibilityNodeInfo> openNodes = nd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
                 if (openNodes != null && !openNodes.isEmpty()) {
                     bHbOpenedSuccessful = false;
                 } else {
@@ -729,7 +775,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     currentNotification = null;
                     return true;
                 } else {
-                    List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId( HBAMOUNTTEXT_STRING_ID );
+                    List<AccessibilityNodeInfo> hbAmounts = nd.findAccessibilityNodeInfosByViewId(HBAMOUNTTEXT_STRING_ID);
                     if (hbAmounts != null && !hbAmounts.isEmpty()) {
                         AccessibilityNodeInfo hbAmount = hbAmounts.get(0);
                         lastHb.SetHbAmount(hbAmount.getText().toString());
@@ -765,18 +811,13 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     public void onAccessibilityEvent(AccessibilityEvent event) {
         try {
             if (event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
-                // Log.i(TAG, "TYPE_NOTIFICATION_STATE_CHANGED");
+                 Log.i(TAG, "TYPE_NOTIFICATION_STATE_CHANGED");
                 //只有在监听阶段，的内容消息才认可处理。
 
                 if (!bIgnoreNotify && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
                     synchronized (this) {
-                        Notification notification = (Notification) event.getParcelableData();
+                        currentNotifications.add((Notification) event.getParcelableData());
 
-                        String content = notification.tickerText != null ? notification.tickerText.toString() : "";
-                        if (content.contains("[微信红包]")) {
-                            Log.i(TAG, "通知栏消息:" + content);
-                            currentNotifications.add((Notification) event.getParcelableData());
-                        }
                     }
                 }
             } else if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
