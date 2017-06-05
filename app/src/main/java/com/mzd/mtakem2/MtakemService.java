@@ -340,17 +340,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 e.printStackTrace();
                             }
                             notify_detect_tm = Calendar.getInstance().getTimeInMillis();
-                        } else {
-                            if (bAutoMode) {
-                                PendingIntent pendingIntent = notification.contentIntent;
-                                try {
-                                    pendingIntent.send();
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-
-                                back2Home();
-                            }
                         }
                     }
                 }
