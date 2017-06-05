@@ -102,15 +102,15 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     //聊天窗中的讲话按钮，用来区分当前页面是聊天窗口，还是聊天列表窗口
     // 6.5.7：a3_  ,6.5.8:a47
-    private static final String SOUNDBUTTON_STRING_ID = "com.tencent.mm:id/a47";
+    private static final String SOUNDBUTTON_STRING_ID = "com.tencent.mm:id/a3_";
 
     //聊天窗口的标题信息，标识了所在的群或者聊天对象
     //6.5.7:gh , 6.5.8:gp
-    private static final String WINDOWTITLETEXT_STRING_ID = "com.tencent.mm:id/gp";
+    private static final String WINDOWTITLETEXT_STRING_ID = "com.tencent.mm:id/gh";
 
     //聊天的文本控件ID
     // 6.5.7:if  , 6.5.8:im
-    private static final String WINDOWCHATTEXT_STRING_ID = "com.tencent.mm:id/im";
+    private static final String WINDOWCHATTEXT_STRING_ID = "com.tencent.mm:id/if";
 
     //聊天信息中的时间标签ID
     //6.5.7:t , 6.5.8:t (没变化）
@@ -118,7 +118,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     //聊天列表中的最后文本信息
     //6.5.7:afx , 6.5.8:agy
-    private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/agy";
+    private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/afx";
 
     //聊天窗中的HB信息
     //6.5.7:   , 6.5.8:a6_
@@ -126,19 +126,19 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     //HB打开按钮
     //6.5.7:bjj , 6.5.8:bm4
-    private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/bm4";
+    private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/bjj";
 
     //HB金额文本按钮
     //6.5.7:bfw , 6.5.8:bii
-    private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/bii";
+    private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/bfw";
 
     //HB发送人文本
-    //6.5.7: , 6.5.8:bie
-    private static final String HBSENDER_STRING_ID = "com.tencent.mm:id/bie";
+    //6.5.7:bfs , 6.5.8:bie
+    private static final String HBSENDER_STRING_ID = "com.tencent.mm:id/bfs";
 
     //HB内容文本
-    //6.5.7: , 6.5.8:big
-    private static final String HBCONTENT_STRING_ID = "com.tencent.mm:id/big";
+    //6.5.7:bfu , 6.5.8:big
+    private static final String HBCONTENT_STRING_ID = "com.tencent.mm:id/bfu";
 
 
     private String windowtitle = "";
@@ -340,17 +340,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 e.printStackTrace();
                             }
                             notify_detect_tm = Calendar.getInstance().getTimeInMillis();
-                        } else {
-                            if (bAutoMode) {
-                                PendingIntent pendingIntent = notification.contentIntent;
-                                try {
-                                    pendingIntent.send();
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-
-                                back2Home();
-                            }
                         }
                     }
                 }
