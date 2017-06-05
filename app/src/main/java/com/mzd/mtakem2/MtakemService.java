@@ -132,6 +132,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     //6.5.7:afx , 6.5.8:agy
     private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/agy";
 
+    //聊天窗中的HB信息
+    //6.5.7:   , 6.5.8:a6_
+    private static final String HB_STRING_ID = "com.tencent.mm:id/a6_";
+
     //HB打开按钮
     //6.5.7:bjj , 6.5.8:bm4
     private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/bm4";
@@ -139,6 +143,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     //HB金额文本按钮
     //6.5.7:bfw , 6.5.8:bii
     private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/bii";
+
+    private String windowtitle = "";
+    private String sender = "";
+    private String hbcontent = "";
+    private String hb_amount = "";
+
 
     @Override
     public void onDestroy() {
@@ -163,8 +173,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         Log.i(TAG, "Mac :" + mac);
         Log.i(TAG, "Dev:" + device_model);
         Log.i(TAG, "VERSION:" + version_release);
-        handler.postDelayed(runnable, 2000);
-        handler1.postDelayed(runnable1, 3000);//轮询本地数据库又不有保存HB信息，还有就上传
+        //handler.postDelayed(runnable, 2000);
+        //handler1.postDelayed(runnable1, 3000);//轮询本地数据库又不有保存HB信息，还有就上传
 
         //动态增加FLAG配置，注意这非常重要，这个将使得能获取窗体的全部完整的节点。
         AccessibilityServiceInfo info = getServiceInfo();
@@ -236,8 +246,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     notify_detect_tm = Calendar.getInstance().getTimeInMillis();
                                     chatlist_detect_tm = 0;
                                     Log.i(TAG, "查到HB消息,进入聊天窗，检查HB");
-                                }
-                                else{
+                                } else {
                                     nStatusCounter = 0;
                                     nStatus = NSTATUS_OPENNOHBDELAY;
                                     Log.i(TAG, "非HB消息，打开即可");
@@ -245,8 +254,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                             } catch (PendingIntent.CanceledException e) {
                                 e.printStackTrace();
-                            }
-                            finally {
+                            } finally {
                                 currentNotification = null;
                             }
 
@@ -810,29 +818,61 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         try {
-            if (event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
-                 Log.i(TAG, "TYPE_NOTIFICATION_STATE_CHANGED");
-                //只有在监听阶段，的内容消息才认可处理。
-
-                if (!bIgnoreNotify && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
-                    synchronized (this) {
-                        currentNotifications.add((Notification) event.getParcelableData());
-
+            switch (event.getEventType()) {
+                case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED: {
+                    //只有在监听阶段，的内容消息才认可处理。
+                    if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
+                        Notification notification = (Notification) event.getParcelableData();
+                        String content = notification.tickerText != null ? notification.tickerText.toString() : "";
+                        if (content.contains("[微信红包]")) {
+                            PendingIntent pendingIntent = notification.contentIntent;
+                            try {
+                                pendingIntent.send();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            notify_detect_tm = Calendar.getInstance().getTimeInMillis();
+                        } else {
+                            //back2Home();
+                        }
                     }
                 }
-            } else if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                //Log.i(TAG, "TYPE_WINDOW_STATE_CHANGED");
-                setCurrentActivityName(event);
-            } else if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-                // Log.i(TAG, "TYPE_WINDOW_CONTENT_CHANGED");
-                //只有在监听阶段，的内容变化才认可处理。
-                if (nStatus == NSTATUS_CHECKNOTIFYSANDCONTENT) bContentUpdated = true;
+                break;
 
-            } else {
-                //Log.i(TAG, "OTHERSTATUS:" + String.format("%x", event.getEventType()));
+                case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
+                case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED: {
+                    Log.i(TAG,"TYPE_WINDOW_CONTENT_CHANGED");
+                    String className = event.getClassName().toString();
+                    Log.i(TAG,className);
+                    if (className.equals("com.tencent.mm.ui.LauncherUI") || className.equals("com.tencent.mm.ui.chatting.En_5b8fbb1e")) {
+                        Log.i(TAG,"LauncherUI enter");
+                        AccessibilityNodeInfo hd = getRootInActiveWindow();
+                        List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HB_STRING_ID);
+                        if (hbNodes != null && !hbNodes.isEmpty()) {
+                            hbNodes.get(hbNodes.size() - 1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            Log.i(TAG,"hbClick");
+                            detect_tm = Calendar.getInstance().getTimeInMillis();
+                        }
+                    } else if (className.equals("com.tencent.mm.plugin.luckymoney.ui.En_fba4b94f")) {
+                        AccessibilityNodeInfo hd = getRootInActiveWindow();
+                        List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
+                        if (hbNodes != null && !hbNodes.isEmpty()) {
+                            hbNodes.get(hbNodes.size() - 1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            Log.i(TAG,"Notify Time:"+String.valueOf(Calendar.getInstance().getTimeInMillis()-notify_detect_tm));
+                            Log.i(TAG,"Detect Time:"+String.valueOf(Calendar.getInstance().getTimeInMillis()-detect_tm));
+                        }
+                    } else if (className.equals("com.tencent.mm.plugin.luckymoney.ui.LuckyMoneyDetailUI")) {
+                        AccessibilityNodeInfo hd = getRootInActiveWindow();
+                        recycle(hd);
+
+                    }
+
+                }
+                break;
             }
         } catch (Exception e) {
             e.printStackTrace();
+            Log.i(TAG,e.getMessage());
         }
     }
 
@@ -1006,6 +1046,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             Log.i(TAG, "Text：" + info.getText());
             Log.i(TAG, "content：" + info.getContentDescription());
             Log.i(TAG, "windowId:" + info.getWindowId());
+            Log.i(TAG, "ViewIdResourceName:" + info.getViewIdResourceName());
         } else {
             for (int i = 0; i < info.getChildCount(); i++) {
                 if (info.getChild(i) != null) {
