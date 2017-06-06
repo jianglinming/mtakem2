@@ -80,6 +80,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bAutoMode = false;//后台全自动抢红包模式，抢完红包自动回桌面
     private boolean bIgnoreNotify = false;//忽略通知处理，通知的红包信息忽略，专注单窗钱红包
     private boolean bAutoReply = false; //收到红包后自动回复
+    private boolean bAutoClickOpenDetail = false;
 
 
     private Handler handler = new Handler();
@@ -206,15 +207,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         public void run() {
             // TODO Auto-generated method stub
             nStatusCounter++;
-            if(nStatusCounter>150){
+            if (nStatusCounter > 150) {
                 nStatusCounter = 0;
                 try {
                     AccessibilityNodeInfo nd = getRootInActiveWindow();
                     if (nd != null && bAutoMode && nd.getPackageName().equals("com.tencent.mm")) {
                         back2Home();
                     }
-                }
-                catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
 
@@ -331,6 +331,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
                         Notification notification = (Notification) event.getParcelableData();
                         String content = notification.tickerText != null ? notification.tickerText.toString() : "";
+                        Log.i(TAG, content.toString());
                         if (content.contains("[微信红包]")) {
                             nStatusCounter = 0; //倒计时清0
                             PendingIntent pendingIntent = notification.contentIntent;
@@ -360,7 +361,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     }
 
                     //Log.i(TAG, className);
-                    if (className.contains("LauncherUI") || className.equals("ui.chatting")) {
+                    if (className.contains("LauncherUI") || className.contains("ui.chatting")) {
                         AccessibilityNodeInfo hd = getRootInActiveWindow();
                         if (hd != null) {
                             //聊天窗口的标题(6.5.7为gh,6.5.8改为gp)
@@ -369,16 +370,19 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 windowtitle = titleNodes.get(0).getText().toString();
                             }
                             String contextString = windowtitle;
-                            List<AccessibilityNodeInfo> contextNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWCHATTEXT_STRING_ID);
-                            for (AccessibilityNodeInfo contextNode : contextNodes) {
-                                Rect rect = new Rect();
-                                contextNode.getBoundsInScreen(rect);
-                                contextString = contextString + contextNode.getText().toString() + rect.toString();
+
+                            if(!bAutoMode) {
+                                List<AccessibilityNodeInfo> contextNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWCHATTEXT_STRING_ID);
+                                for (AccessibilityNodeInfo contextNode : contextNodes) {
+                                    Rect rect = new Rect();
+                                    contextNode.getBoundsInScreen(rect);
+                                    contextString = contextString + contextNode.getText().toString() + rect.toString();
+                                }
                             }
-                            if (!contextString.equals(last_context_string)) {
+                            //在无人值守模式下，不管内容相是否变化都检查打开HB，也是为了提高响应速度吧！
+                            if (bAutoMode || !contextString.equals(last_context_string)) {
                                 List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
                                 if (hbNodes != null && !hbNodes.isEmpty()) {
-
                                     for (int i = hbNodes.size() - 1; i >= 0; i--) {
                                         Log.i(TAG, "i=" + String.valueOf(i));
                                         AccessibilityNodeInfo nodeInfo = hbNodes.get(i);
@@ -387,6 +391,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             detect_tm = Calendar.getInstance().getTimeInMillis();
                                             last_context_string = contextString;
                                             nStatusCounter = 0; //倒计时清0
+                                            bAutoClickOpenDetail = true;
                                             break;
                                         }
                                     }
@@ -403,9 +408,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             Log.i(TAG, "Notify Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - notify_detect_tm));
                             Log.i(TAG, "Detect Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - detect_tm));
                             nStatusCounter = 0; //倒计时清0
-                        }
-                        else{
-                           //这个会影响抢HB，原因待查
+                        } else {
+                            //这个会影响抢HB，原因待查
                             /* boolean hasNodes = hasOneOfThoseNodes(
                                     WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH,WECHAT_WHOGIVEYOUAHB);
                             if (hasNodes) {
@@ -442,7 +446,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             uploadHbInfo();
                             bUnpackedSuccessful = false;
                         }
-                        performGlobalAction(GLOBAL_ACTION_BACK);
+
+                        if(bAutoClickOpenDetail) {
+                            performGlobalAction(GLOBAL_ACTION_BACK);
+                            bAutoClickOpenDetail = false;
+                        }
+
                         if (bAutoMode) back2Home();
                     }
 

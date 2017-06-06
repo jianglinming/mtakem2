@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mzd.mtakem2"
     android:versionCode="1"
-    android:versionName="v1.1.1.20170605_beta">
+    android:versionName="v1.1.1.20170607_beta">
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.INTERNET" />
