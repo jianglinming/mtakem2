@@ -12,7 +12,7 @@
     <string name="download_processing">下载中</string>
     <string name="have_new_version">有新版本</string>
     <string name="title_activity_update">软件更新页面</string>
-    <string name="url_update_app">https://api.github.com/repos/jianglinming/mtakem2/releases/latest</string>
+    <string name="url_update_app">http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=getlatestversion</string>
     <string name="neednot_update">已是最新版本</string>
     <string name="find_latest_version">发现最新版本</string>
     <string name="remote_check_error">远程通信错误</string>

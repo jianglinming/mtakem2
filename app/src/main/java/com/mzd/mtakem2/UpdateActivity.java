@@ -25,10 +25,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
 
+import com.mzd.mtakem2.utils.ComFunc;
 import com.mzd.mtakem2.utils.UpdateTask;
 
 public class UpdateActivity extends AppCompatActivity {
@@ -61,17 +64,23 @@ public class UpdateActivity extends AppCompatActivity {
                 switch (msg.what){
                     case MSG_GETLATESTVERSION:{
                         Bundle data = msg.getData();
-                        String val = data.getString("value");
+                        String val = "";
+                        try {
+                            val = URLDecoder.decode(data.getString("value"), "gbk");
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
                         try {
                             JSONObject jsonObject = new JSONObject(val);
-                            String remoteLatestVer = jsonObject.getString("tag_name");
-                            String nowVer = getVersion();
-                            Log.i(TAG,remoteLatestVer+"=="+nowVer);
-                            if(remoteLatestVer.equals(nowVer)){
-                                txtMsg.setText(getString(R.string.neednot_update));
+                            boolean bNeedUpdate = jsonObject.getBoolean("needupdate");
+
+                            if(!bNeedUpdate){
+                                txtMsg.setText(getString(R.string.neednot_update)+"\r\n"+getVersion());
                                 updateBtn.setVisibility(Button.INVISIBLE);
                             }else {
-                                txtMsg.setText(getString(R.string.find_latest_version));
+                                String remoteLatestVer = jsonObject.getString("tag_name");
+                                String nowVer = getVersion();
+                                txtMsg.setText(getString(R.string.find_latest_version)+":\r\n"+remoteLatestVer+"\r\n"+jsonObject.getString("updatecontent"));
                                 updateBtn.setVisibility(Button.VISIBLE);
                                 JSONArray jsonArray = jsonObject.getJSONArray("assets");
                                 JSONObject asset = jsonArray.getJSONObject(0);
@@ -103,7 +112,7 @@ public class UpdateActivity extends AppCompatActivity {
             public void run() {
                 HttpURLConnection conn = null;
                 try {
-                    URL url = new URL(getString(R.string.url_update_app));
+                    URL url = new URL(getString(R.string.url_update_app)+"&strOldVersion="+ ComFunc.getVersion(getApplicationContext()));
                     conn = (HttpURLConnection) url
                             .openConnection();
                     //使用GET方法获取
