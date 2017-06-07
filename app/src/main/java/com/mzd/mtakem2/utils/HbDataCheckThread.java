@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.mzd.mtakem2.HbHistory;
@@ -24,7 +25,6 @@ import java.util.Vector;
 public class HbDataCheckThread extends Thread {
     private static final String TAG = "HbDataCheckThread";
     private Handler mHandler;
-    private boolean run = false;
     private Context mContext;
     private Object lockkey;
 
@@ -33,17 +33,19 @@ public class HbDataCheckThread extends Thread {
         lockkey = obj;
     }
 
-    public void startThread(){
-        if(!run) {
-            mHandler = new Handler();
-            mHandler.postDelayed(runnable, 1000);
-            Log.i(TAG,"HbDataCheckThread Start");
-        }
-        run = true;
+    @Override
+    public void run() {
+        super.run();
+        Looper.prepare();
+        mHandler = new Handler();
+        mHandler.postDelayed(runnable, 1000);
+        Log.i(TAG,"HbDataCheckThread Start");
+        Log.i(TAG, "ThreadId:" + String.valueOf(Thread.currentThread().getId()));
+        Looper.loop();
     }
 
+
     public void stopThread(){
-        run = false;
         mHandler.removeCallbacks(runnable);
         Log.i(TAG,"HbDataCheckThread Stop");
     }

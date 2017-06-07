@@ -168,9 +168,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         Log.i(TAG, "Mac :" + mac);
         Log.i(TAG, "Dev:" + device_model);
         Log.i(TAG, "VERSION:" + version_release);
+        Log.i(TAG, "ThreadId:" + String.valueOf(Thread.currentThread().getId()));
+
         lockkey = new Object();
         hbDataCheckThread = new HbDataCheckThread(getApplicationContext(),lockkey);
-        hbDataCheckThread.startThread();
+        hbDataCheckThread.start();
 
         //动态增加FLAG配置，注意这非常重要，这个将使得能获取窗体的全部完整的节点。
         AccessibilityServiceInfo info = getServiceInfo();
