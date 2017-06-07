@@ -131,7 +131,7 @@ public class HbDataCheckThread extends Thread {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            mHandler.postDelayed(this,3000);
+            mHandler.postDelayed(this,1000*60*5);
         }
     };
 
