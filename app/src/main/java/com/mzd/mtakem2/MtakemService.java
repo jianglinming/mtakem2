@@ -75,15 +75,16 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bAutoMode = false;//后台全自动抢HB模式，抢完红包自动回桌面
     private boolean bIgnoreNotify = false;//忽略通知处理，通知的红包信息忽略，专注单窗钱红包
     private boolean bAutoReply = false; //收到红包后自动回复
+    Handler mHander = new Handler();
 
     private boolean bAutoClickNotify = false;
     private boolean bAutoClickChatList = false;
     private boolean bAutoClickHbItem = false;
     private boolean bAutoClickOpenDetail = false;//这个标志为用于实现收到打开HB详情是，详情不自动返回的功能
     private boolean bAutoClickOpenButton = false;
+    private boolean bAutoClickBack = false;
 
     private SharedPreferences sharedPreferences;
-
 
     private long detect_tm = 0;
     private long notify_detect_tm = 0;
@@ -122,6 +123,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     //6.5.7:bjj , 6.5.8:bm4
     private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/bm4";
 
+    //HB打开按钮
+    //6.5.7: , 6.5.8:bm3
+    private static final String HBNONETEXT_STRING_ID = "com.tencent.mm:id/bm3";
+
     //HB金额文本按钮
     //6.5.7:bfw , 6.5.8:bii
     private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/bii";
@@ -142,6 +147,21 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private String last_context_string = "";
     private HbDataCheckThread hbDataCheckThread;
     private Object lockkey;
+
+
+    Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                AccessibilityNodeInfo nd = getRootInActiveWindow();
+                if (nd != null && nd.getPackageName().equals("com.tencent.mm")) {
+                    back2Home();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
 
     @Override
     public void onDestroy() {
@@ -171,7 +191,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         Log.i(TAG, "ThreadId:" + String.valueOf(Thread.currentThread().getId()));
 
         lockkey = new Object();
-        hbDataCheckThread = new HbDataCheckThread(getApplicationContext(),lockkey);
+        hbDataCheckThread = new HbDataCheckThread(getApplicationContext(), lockkey);
         hbDataCheckThread.start();
 
         //动态增加FLAG配置，注意这非常重要，这个将使得能获取窗体的全部完整的节点。
@@ -202,7 +222,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     }
 
 
-
     /*选择禁用服务触发事件*/
     @Override
     public boolean onUnbind(Intent intent) {
@@ -218,193 +237,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         try {
-            //一旦有动静，在自动模式下，就执行窗口置后。
-            switch (event.getEventType()) {
-                case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED: {
-                    if ((!bIgnoreNotify || bAutoMode) && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
-                        Notification notification = (Notification) event.getParcelableData();
-                        String content = notification.tickerText != null ? notification.tickerText.toString() : "";
-                        //Log.i(TAG, content.toString());
-                        if (content.contains("[微信红包]")) {
-                            PendingIntent pendingIntent = notification.contentIntent;
-                            try {
-                                pendingIntent.send();
-                                bAutoClickNotify = true;
-                                bAutoClickOpenDetail = false;
-                                bAutoClickChatList = false;
-                                bAutoClickHbItem = false;
-                                bAutoClickOpenButton = false;
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                            notify_detect_tm = Calendar.getInstance().getTimeInMillis();
-                        }
-                    }
-                }
-                break;
-                case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
-                case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED: {
-                    //Log.i(TAG, "TYPE_WINDOW_CONTENT_CHANGED");
-                    String className = "";
-                    try {
-                        ComponentName componentName = new ComponentName(
-                                event.getPackageName().toString(),
-                                event.getClassName().toString()
-                        );
-                        getPackageManager().getActivityInfo(componentName, 0);
-                        className = componentName.flattenToShortString();
-                    } catch (PackageManager.NameNotFoundException e) {
-                        className = WECHAT_LUCKMONEY_GENERAL_ACTIVITY;
-                    }
-
-                    //Log.i(TAG, className);
-                    if (className.contains("LauncherUI") || className.contains("ui.chatting")) {
-                        AccessibilityNodeInfo hd = getRootInActiveWindow();
-                        if (hd != null) {
-                            List<AccessibilityNodeInfo> tmpnds = hd.findAccessibilityNodeInfosByViewId(SOUNDBUTTON_STRING_ID);
-                            if (tmpnds != null && tmpnds.isEmpty()) {
-                                if (!bAutoClickChatList) {
-                                    //6.5.7是afx,6.5.8变为agy
-                                    List<AccessibilityNodeInfo> nodeInfos1 = hd.findAccessibilityNodeInfosByViewId(CHATLISTTEXT_STRING_ID);
-                                    //找到了有消息条目，说明就进入了窗口了
-                                    if (nodeInfos1 != null && !nodeInfos1.isEmpty()) {
-                                        AccessibilityNodeInfo findNode = null;
-                                        for (int i = 0; i < nodeInfos1.size(); i++) {
-                                            if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
-                                                findNode = nodeInfos1.get(i);
-                                                if (findNode != null && findNode.getParent() != null && findNode.getParent().getParent() != null && findNode.getParent().getParent().getParent() != null && findNode.getParent().getParent().getParent().getParent() != null) {
-                                                    AccessibilityNodeInfo clickableParentNode = findNode.getParent().getParent().getParent().getParent();
-                                                    //如果有新消息提醒的话，就点击这个可以用android studio 中的adm的"Dump View hierarchy for UI Automator"层次关系
-                                                    if (clickableParentNode.getChild(0).getChildCount() > 1) {
-                                                        clickableParentNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                        Log.i(TAG, "点击窗口列表");
-                                                        bAutoClickChatList = true;
-                                                        break;
-                                                    }
-                                                }
-                                                break;
-                                            }
-                                        }
-
-                                        if (!bAutoClickChatList) {
-                                            if (bAutoMode) back2Home();
-                                        }
-                                    }
-                                }
-
-                            } else {
-
-                                bAutoClickChatList = false;
-                                //聊天窗口的标题(6.5.7为gh,6.5.8改为gp)
-                                if (!bAutoClickHbItem) {
-                                    List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
-                                    if (titleNodes != null && !titleNodes.isEmpty()) {
-                                        windowtitle = titleNodes.get(0).getText().toString();
-                                        String contextString = windowtitle;
-                                        boolean bfindHb = false;
-                                        if (!bAutoMode) {
-                                            List<AccessibilityNodeInfo> contextNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWCHATTEXT_STRING_ID);
-                                            for (AccessibilityNodeInfo contextNode : contextNodes) {
-                                                Rect rect = new Rect();
-                                                contextNode.getBoundsInScreen(rect);
-                                                contextString = contextString + contextNode.getText().toString() + rect.toString();
-                                            }
-                                        }
-                                        //在无人值守模式下，不管内容相是否变化都检查打开HB，也是为了提高响应速度吧！
-                                        if (bAutoMode || !contextString.equals(last_context_string)) {
-                                            List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
-                                            if (hbNodes != null && !hbNodes.isEmpty()) {
-                                                for (int i = hbNodes.size() - 1; i >= 0; i--) {
-                                                    Log.i(TAG, "i=" + String.valueOf(i));
-                                                    AccessibilityNodeInfo nodeInfo = hbNodes.get(i);
-                                                    if (nodeInfo != null && nodeInfo.getParent() != null && nodeInfo.getParent().getParent() != null && nodeInfo.getParent().getParent().getParent() != null && nodeInfo.getParent().getParent().getParent().getParent() != null) {
-                                                        nodeInfo.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                        Log.i(TAG, "打开HB项目");
-                                                        detect_tm = Calendar.getInstance().getTimeInMillis();
-                                                        last_context_string = contextString;
-
-                                                        bAutoClickOpenDetail = true;
-                                                        bAutoClickHbItem = true;
-                                                        bfindHb = true;
-                                                        break;
-                                                    }
-                                                }
-                                            } else {
-                                                if (bAutoMode) back2Home();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                    } else if (className.contains("luckymoney.ui.En_")) {
-                        AccessibilityNodeInfo hd = getRootInActiveWindow();
-                        bAutoClickChatList = false;
-                        bAutoClickHbItem = false;
-                        if (!bAutoClickOpenButton) {
-                            List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
-                            if (hbNodes != null && !hbNodes.isEmpty()) {
-                                hbNodes.get(hbNodes.size() - 1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                Log.i(TAG, "点击抢HB");
-                                bUnpackedSuccessful = true;
-                                bAutoClickOpenButton = true;
-                                Log.i(TAG, "Notify Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - notify_detect_tm));
-                                Log.i(TAG, "Detect Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - detect_tm));
-
-                            } else {
-                                boolean hasNodes = hasOneOfThoseNodes(
-                                        WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH, WECHAT_WHOGIVEYOUAHB);
-                                if (hasNodes) {
-                                    performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
-                                    if (bAutoMode) back2Home();
-                                }
-                            }
-                        }
-
-                    } else if (className.contains("luckymoney.ui.LuckyMoneyDetailUI")) {
-                        AccessibilityNodeInfo hd = getRootInActiveWindow();
-                        bAutoClickChatList = false;
-                        bAutoClickHbItem = false;
-                        bAutoClickOpenButton = false;
-                        if (hd != null) {
-                            List<AccessibilityNodeInfo> hbNodes = null;
-                            //发送人
-                            hbNodes = hd.findAccessibilityNodeInfosByViewId(HBSENDER_STRING_ID);
-                            if (hbNodes != null & !hbNodes.isEmpty()) {
-                                sender = hbNodes.get(0).getText().toString();
-                            }
-                            //内容
-                            hbNodes = hd.findAccessibilityNodeInfosByViewId(HBCONTENT_STRING_ID);
-                            if (hbNodes != null & !hbNodes.isEmpty()) {
-                                hbcontent = hbNodes.get(0).getText().toString();
-                            }
-                            //金额
-                            hbNodes = hd.findAccessibilityNodeInfosByViewId(HBAMOUNTTEXT_STRING_ID);
-                            if (hbNodes != null & !hbNodes.isEmpty()) {
-                                hb_amount = hbNodes.get(0).getText().toString();
-                            }
-                        }
-                        Log.i(TAG, "group=" + windowtitle);
-                        Log.i(TAG, "sender=" + sender);
-                        Log.i(TAG, "content=" + hbcontent);
-                        Log.i(TAG, "amount=" + hb_amount);
-
-                        if (bUnpackedSuccessful) {
-                            uploadHbInfo();
-                            bUnpackedSuccessful = false;
-                        }
-
-                        if (bAutoClickOpenDetail) {
-                            performGlobalAction(GLOBAL_ACTION_BACK);
-                            Log.i(TAG, "抢完后返回");
-                            bAutoClickOpenDetail = false;
-                        }
-                        if (bAutoMode) back2Home();
-                    }
-
-                }
-                break;
+            if(bAutoMode){
+                autoDealHb(event);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -423,6 +257,121 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
         }
         return false;
+    }
+
+    private void autoDealHb(AccessibilityEvent event) throws JSONException {
+        //一旦有动静，在自动模式下，就执行窗口置后。
+        switch (event.getEventType()) {
+            case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED: {
+                if ( event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
+                    Notification notification = (Notification) event.getParcelableData();
+                    String content = notification.tickerText != null ? notification.tickerText.toString() : "";
+                    //Log.i(TAG, content.toString());
+                    if (content.contains("[微信红包]")) {
+                        PendingIntent pendingIntent = notification.contentIntent;
+                        try {
+                            windowtitle = notification.category;
+                            pendingIntent.send();
+                            notify_detect_tm = Calendar.getInstance().getTimeInMillis();
+                            mHander.postDelayed(runnable, 5000);
+                            bAutoClickNotify = true;
+                            bAutoClickOpenDetail = false;
+                            bAutoClickChatList = false;
+                            bAutoClickHbItem = false;
+                            bAutoClickOpenButton = false;
+                            bAutoClickBack = false;
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+            break;
+            case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
+            case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED: {
+                AccessibilityNodeInfo hd = getRootInActiveWindow();
+                if (hd != null) {
+                    if (!bAutoClickHbItem) {
+                        List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                        if (titleNodes != null && !titleNodes.isEmpty()) {
+                            windowtitle = titleNodes.get(0).getText().toString();
+                            List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
+                            if (hbNodes != null && !hbNodes.isEmpty()) {
+                                for (int i = hbNodes.size() - 1; i >= 0; i--) {
+                                    AccessibilityNodeInfo nodeInfo = hbNodes.get(i);
+                                    if (nodeInfo != null && nodeInfo.getParent() != null && nodeInfo.getParent().getParent() != null && nodeInfo.getParent().getParent().getParent() != null && nodeInfo.getParent().getParent().getParent().getParent() != null) {
+                                        nodeInfo.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        Log.i(TAG, "发现点击红包");
+                                        detect_tm = Calendar.getInstance().getTimeInMillis();
+                                        bAutoClickOpenDetail = true;
+                                        bAutoClickHbItem = true;
+                                        break;
+                                    }
+                                }
+                            } else {
+                                Log.i(TAG, "假消息，没有红包");
+                                back2Home();
+                                mHander.removeCallbacks(runnable);
+                            }
+                        }
+                    }
+                    if (bAutoClickHbItem) {
+                        List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
+                        if (hbNodes != null && !hbNodes.isEmpty()) {
+                            hbNodes.get(hbNodes.size() - 1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            Log.i(TAG, "拆开红包");
+                            bUnpackedSuccessful = true;
+                            bAutoClickOpenButton = true;
+                            Log.i(TAG, "Notify Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - notify_detect_tm));
+                            Log.i(TAG, "Detect Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - detect_tm));
+                            bAutoClickHbItem = false;
+                        } else {
+                            List<AccessibilityNodeInfo> hbNodes1 = hd.findAccessibilityNodeInfosByViewId(HBNONETEXT_STRING_ID);
+                            if (hbNodes1 != null && !hbNodes1.isEmpty()) {
+                                Log.i(TAG, "红包派完了");
+                                bAutoClickHbItem = false;
+                                back2Home();
+                                mHander.removeCallbacks(runnable);
+                            }
+                        }
+                    }
+
+                    if (bAutoClickOpenButton) {
+                        boolean hasNodes = hasOneOfThoseNodes(WECHAT_DETAILS_CH, WECHAT_DETAILS_EN);
+                        if (hasNodes) {
+                            List<AccessibilityNodeInfo> hbNodes = null;
+                            //发送人
+                            hbNodes = hd.findAccessibilityNodeInfosByViewId(HBSENDER_STRING_ID);
+                            if (hbNodes != null & !hbNodes.isEmpty()) {
+                                sender = hbNodes.get(0).getText().toString();
+                            }
+                            //内容
+                            hbNodes = hd.findAccessibilityNodeInfosByViewId(HBCONTENT_STRING_ID);
+                            if (hbNodes != null & !hbNodes.isEmpty()) {
+                                hbcontent = hbNodes.get(0).getText().toString();
+                            }
+                            //金额
+                            hbNodes = hd.findAccessibilityNodeInfosByViewId(HBAMOUNTTEXT_STRING_ID);
+                            if (hbNodes != null & !hbNodes.isEmpty()) {
+                                hb_amount = hbNodes.get(0).getText().toString();
+                            }
+                            if (bUnpackedSuccessful) {
+                                uploadHbInfo();
+                                bUnpackedSuccessful = false;
+                            }
+                            if (bAutoClickOpenDetail) {
+                                back2Home();
+                                mHander.removeCallbacks(runnable);
+                                bAutoClickOpenDetail = false;
+                            }
+                            bAutoClickOpenButton = false;
+                        }
+                    }
+                }
+            }
+            break;
+        }
     }
 
     /*根据系统的配置，随机获得回复的词语*/
@@ -663,7 +612,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             Log.i(TAG, "上传失败,保存到本地数据库");
                         }
 
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
