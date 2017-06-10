@@ -270,17 +270,15 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     if (content.contains("[微信红包]")) {
                         PendingIntent pendingIntent = notification.contentIntent;
                         try {
-                            windowtitle = notification.category;
                             pendingIntent.send();
                             notify_detect_tm = Calendar.getInstance().getTimeInMillis();
-                            mHander.postDelayed(runnable, 5000);
                             bAutoClickNotify = true;
+                            mHander.postDelayed(runnable, 5000);
                             bAutoClickOpenDetail = false;
                             bAutoClickChatList = false;
                             bAutoClickHbItem = false;
                             bAutoClickOpenButton = false;
                             bAutoClickBack = false;
-
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -372,6 +370,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
             break;
         }
+    }
+
+    private void manMode(AccessibilityEvent event) throws JSONException {
+
     }
 
     /*根据系统的配置，随机获得回复的词语*/
