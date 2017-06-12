@@ -303,6 +303,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         try {
                             pendingIntent.send();
                             notify_detect_tm = Calendar.getInstance().getTimeInMillis();
+                            chatlist_detect_tm = 0;
+                            detect_tm = 0;
                             bAutoClickNotify = true;
                             mHander.postDelayed(runnable, 6000);
                             bAutoClickOpenDetail = false;
