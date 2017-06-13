@@ -7,14 +7,6 @@
         android:title="无人值守" />
     <CheckBoxPreference
         android:defaultValue="false"
-        android:key="check_box_ignorenotify"
-        android:title="忽略通知" />
-    <CheckBoxPreference
-        android:defaultValue="false"
-        android:key="check_box_ignorechatlist"
-        android:title="忽略列表" />
-    <CheckBoxPreference
-        android:defaultValue="false"
         android:key="check_box_autoReply"
         android:title="自动回复" />
     <EditTextPreference
@@ -30,4 +22,13 @@
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="自动回复词语设置" />
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="check_box_ignorenotify"
+        android:title="值守使能通知" />
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="check_box_ignorechatlist"
+        android:title="值守使能列表" />
+
 </PreferenceScreen>

@@ -77,6 +77,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bIgnoreChatList = false;//忽略列表消息，提高单床抢HB
     private boolean bAutoReply = false; //收到红包后自动回复
     private long autoReplyDelay = 1000;
+    private boolean bCanUse = true;
 
     Handler mHander = new Handler();
 
@@ -169,15 +170,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     Runnable autoReplyFun = new Runnable() {
         @Override
         public void run() {
-            try{
+            try {
                 AccessibilityNodeInfo hd = getRootInActiveWindow();
                 String strReply = generateCommentString();
-                if(findEditText(hd,strReply)){
-                    Log.i(TAG,"AutoReply:"+strReply);
+                if (findEditText(hd, strReply)) {
+                    Log.i(TAG, "AutoReply:" + strReply);
                     send();
                 }
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             back2Home();
@@ -228,6 +228,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         bIgnoreChatList = sharedPreferences.getBoolean("check_box_ignorechatlist", false);
         bAutoReply = sharedPreferences.getBoolean("check_box_autoReply", false);
         autoReplyDelay = Integer.parseInt(sharedPreferences.getString("edit_text_autoReplyDelay", "1000"));
+        bCanUse = sharedPreferences.getBoolean("canUse", true);
 
     }
 
@@ -248,6 +249,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         if (key.equals("edit_text_autoReplyDelay")) {
             autoReplyDelay = Integer.parseInt(sharedPreferences.getString(key, "1000"));
         }
+        if (key.equals("canUse")) {
+            bCanUse = sharedPreferences.getBoolean(key, true);
+        }
     }
 
 
@@ -266,10 +270,15 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         try {
-            if (bAutoMode) {
-                autoDealHb(event);
-            } else {
-                manMode(event);
+            if (bCanUse) {
+                if (bAutoMode) {
+                    autoDealHb(event);
+                } else {
+                    manMode(event);
+                }
+            }
+            else{
+                Log.i(TAG,"辅助功能不能使用");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -397,12 +406,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                             if (bUnpackedSuccessful) {
                                 uploadHbInfo();
-                                if(bAutoReply){
+                                if (bAutoReply) {
                                     performGlobalAction(GLOBAL_ACTION_BACK);
                                     mHander.removeCallbacks(runnable);
-                                    mHander.postDelayed(autoReplyFun,autoReplyDelay);
+                                    mHander.postDelayed(autoReplyFun, autoReplyDelay);
                                     bUnpackedSuccessful = false;
-                                }else {
+                                } else {
                                     back2Home();
                                     mHander.removeCallbacks(runnable);
                                     bUnpackedSuccessful = false;
@@ -424,7 +433,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
         switch (event.getEventType()) {
             case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED: {
-                if ((!bIgnoreNotify) && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
+                if ((bIgnoreNotify) && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
                     Notification notification = (Notification) event.getParcelableData();
                     String content = notification.tickerText != null ? notification.tickerText.toString() : "";
                     if (content.contains("[微信红包]")) {
@@ -465,7 +474,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     AccessibilityNodeInfo hd = getRootInActiveWindow();
                     if (hd != null) {
                         //列表
-                        if (!bIgnoreChatList && !bAutoClickChatList) {
+                        if (bIgnoreChatList && !bAutoClickChatList) {
                             //6.5.7是afx,6.5.8变为agy
                             List<AccessibilityNodeInfo> nodeInfos1 = hd.findAccessibilityNodeInfosByViewId(CHATLISTTEXT_STRING_ID);
                             //找到了有消息条目，说明就进入了窗口了

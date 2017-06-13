@@ -1,15 +1,20 @@
 package com.mzd.mtakem2;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -17,7 +22,9 @@ import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.mzd.mtakem2.utils.AuthorizedCheckThread;
 import com.mzd.mtakem2.utils.ComFunc;
 import com.mzd.mtakem2.utils.HttpUtils;
 
@@ -48,6 +55,47 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     //AccessibilityService 管理
     private AccessibilityManager accessibilityManager;
 
+
+    public static final int UPDATE_AUTHORIZE_STATUS = 1;
+    public static final int UPDATE_AUTHORIZE_STATUS_FROMBUTTON = 2;
+    //认证检查线程
+    private Handler mHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            try {
+                switch (msg.what) {
+                    case UPDATE_AUTHORIZE_STATUS: {
+                        Bundle data = msg.getData();
+                        updateAuthorizeStatus(data.getString("result"));
+                    }
+                    break;
+                    case UPDATE_AUTHORIZE_STATUS_FROMBUTTON:{
+                        Bundle data = msg.getData();
+                        updateAuthorizeStatus(data.getString("result"));
+                        try{
+                            JSONObject obj = new JSONObject(data.getString("result"));
+                            if(obj.getBoolean("canuse")){
+                                Toast.makeText(getApplicationContext(), getText(R.string.activated_success), Toast.LENGTH_SHORT).show();
+                            }
+                            else{
+                                Toast.makeText(getApplicationContext(), getText(R.string.soft_expired), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                        catch (Exception e){
+                            Toast.makeText(getApplicationContext(), getText(R.string.activated_fail), Toast.LENGTH_SHORT).show();
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            return false;
+        }
+    });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,6 +115,8 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         accessibilityManager = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
         accessibilityManager.addAccessibilityStateChangeListener(this);
         updateServiceStatus();
+        new AuthorizedCheckThread(this,mHandler).start();
+        Log.i(TAG,"OnMainActivityCreate");
     }
 
 
@@ -92,28 +142,46 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             startActivity(updateIntent);
     }
 
-    /*
-        读取服务器反馈
-     */
-    private String readMyInputStream(InputStream is) {
-        byte[] result;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = is.read(buffer)) != -1) {
-                baos.write(buffer, 0, len);
-            }
-            is.close();
-            baos.close();
-            result = baos.toByteArray();
+    public void copyMactoClip(View view){
+        ClipData clip = ClipData.newPlainText("label", ComFunc.getMac());
+        ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        clipboardManager.setPrimaryClip(clip);
+        Toast.makeText(this, "已将本机Mac码复制到粘贴板", Toast.LENGTH_SHORT).show();
+    }
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            String errorStr = "获取数据失败。";
-            return errorStr;
+    private void updateAuthorizeStatus(String result){
+        TextView txtActivateMsg = (TextView) findViewById(R.id.txtActivateMsg);
+        try{
+            JSONObject obj = new JSONObject(result);
+            boolean bCanUse = obj.getBoolean("canuse");
+            String status = obj.getString("status");
+            if(bCanUse){
+                txtActivateMsg.setText(status + " left "+ obj.getString("leftusehours") +" h");
+            }
+            else{
+                txtActivateMsg.setText(status + " expired " + obj.getString("msg") );
+            }
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean("canUse",bCanUse);
+            editor.commit();
         }
-        return new String(result);
+        catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    public void activateSoft(View view){
+        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&mac="+ComFunc.getMac()+"&rand="+String.valueOf(new java.util.Date().getTime()), new HttpUtils.CallBack() {
+            @Override
+            public void onRequestComplete(String result) {
+                Message msg = mHandler.obtainMessage();
+                msg.what = UPDATE_AUTHORIZE_STATUS_FROMBUTTON;
+                Bundle data = new Bundle();
+                data.putString("result",result);
+                msg.setData(data);
+                mHandler.sendMessage(msg);
+            }
+        });
     }
 
     /**
@@ -145,11 +213,6 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         return false;
     }
 
-
-    public boolean checkVersion(String url) {
-
-        return false;
-    }
 
     @Override
     public void onAccessibilityStateChanged(boolean enabled) {
