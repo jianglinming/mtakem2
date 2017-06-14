@@ -201,6 +201,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/lbtn_activate"
                 style="?android:attr/borderlessButtonStyle"
                 android:layout_width="110dp"
                 android:layout_height="match_parent"
@@ -227,6 +228,7 @@
                 style="?android:attr/borderlessButtonStyle"
                 android:layout_width="110dp"
                 android:layout_height="match_parent"
+                android:onClick="openabout"
                 android:orientation="vertical">
 
                 <ImageView

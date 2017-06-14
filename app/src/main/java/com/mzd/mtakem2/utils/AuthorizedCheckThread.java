@@ -56,7 +56,7 @@ public class AuthorizedCheckThread extends Thread {
                 e.printStackTrace();
             }
 
-            mHandler.postDelayed(this,10000);
+            mHandler.postDelayed(this,1000*3600*2);
         }
     };
 }

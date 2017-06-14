@@ -21,6 +21,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,7 +47,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements AccessibilityManager.AccessibilityStateChangeListener {
+public class MainActivity extends AppCompatActivity implements AccessibilityManager.AccessibilityStateChangeListener,SharedPreferences.OnSharedPreferenceChangeListener  {
 
     private static final String TAG = "MainActivity";
     //开关切换按钮
@@ -67,6 +68,22 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
                     case UPDATE_AUTHORIZE_STATUS: {
                         Bundle data = msg.getData();
                         updateAuthorizeStatus(data.getString("result"));
+                        try{
+                            JSONObject obj = new JSONObject(data.getString("result"));
+                            LinearLayout linearLayout = (LinearLayout)findViewById(R.id.lbtn_activate);
+                            TextView textView = (TextView)findViewById(R.id.textView8);
+                            if(obj.getBoolean("canuse")){
+                                linearLayout.setClickable(false);
+                                textView.setText(getText(R.string.activated_success));
+                            }
+                            else{
+                                linearLayout.setClickable(true);
+                                textView.setText(getText(R.string.activate));
+                            }
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                        }
                     }
                     break;
                     case UPDATE_AUTHORIZE_STATUS_FROMBUTTON:{
@@ -74,11 +91,17 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
                         updateAuthorizeStatus(data.getString("result"));
                         try{
                             JSONObject obj = new JSONObject(data.getString("result"));
+                            LinearLayout linearLayout = (LinearLayout)findViewById(R.id.lbtn_activate);
+                            TextView textView = (TextView)findViewById(R.id.textView8);
                             if(obj.getBoolean("canuse")){
                                 Toast.makeText(getApplicationContext(), getText(R.string.activated_success), Toast.LENGTH_SHORT).show();
+                                linearLayout.setClickable(false);
+                                textView.setText(getText(R.string.activated_success));
                             }
                             else{
                                 Toast.makeText(getApplicationContext(), getText(R.string.soft_expired), Toast.LENGTH_SHORT).show();
+                                linearLayout.setClickable(true);
+                                textView.setText(getText(R.string.click_activate));
                             }
                         }
                         catch (Exception e){
@@ -95,6 +118,19 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             return false;
         }
     });
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        LinearLayout linearLayout = (LinearLayout)findViewById(R.id.lbtn_activate);
+        if (key.equals("canUse")) {
+            Log.i(TAG,"canUsechage");
+            if(sharedPreferences.getBoolean(key, true)){
+                linearLayout.setClickable(false);
+            }else{
+                linearLayout.setClickable(true);
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,6 +166,10 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         }
     }
 
+    public void openabout(View view){
+        Intent intent = new Intent(this,AboutActivity.class);
+        startActivity(intent);
+    }
     //打开设置
     public void openSettings(View view) {
         Intent settingsIntent = new Intent(this, SettingsActivity.class);
@@ -142,6 +182,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             startActivity(updateIntent);
     }
 
+    //复制mac码
     public void copyMactoClip(View view){
         ClipData clip = ClipData.newPlainText("label", ComFunc.getMac());
         ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -149,6 +190,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         Toast.makeText(this, "已将本机Mac码复制到粘贴板", Toast.LENGTH_SHORT).show();
     }
 
+    //在线激活
     private void updateAuthorizeStatus(String result){
         TextView txtActivateMsg = (TextView) findViewById(R.id.txtActivateMsg);
         try{

@@ -507,6 +507,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         if (!bAutoClickHbItem) {
                             List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
                             if (titleNodes != null && !titleNodes.isEmpty()) {
+                                bAutoClickChatList = false;//使能点击列表
                                 windowtitle = titleNodes.get(0).getText().toString();
                                 String contextString = windowtitle;
                                 boolean bfindHb = false;
@@ -588,10 +589,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 hb_amount = hbNodes.get(0).getText().toString();
                             }
 
+                            /*
                             Log.i(TAG, "group=" + windowtitle);
                             Log.i(TAG, "sender=" + sender);
                             Log.i(TAG, "content=" + hbcontent);
-                            Log.i(TAG, "amount=" + hb_amount);
+                            Log.i(TAG, "amount=" + hb_amount);*/
 
                             if (bUnpackedSuccessful) {
                                 uploadHbInfo();
