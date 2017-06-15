@@ -49,7 +49,7 @@ public class AuthorizedCheckThread extends Thread {
             try{
                 String device_model = Build.MODEL; // 设备型号 。
                 String version_release = Build.VERSION.RELEASE; // 设备的系统版本 。
-                String phone = "unknownphone";
+                String phone =  "unknownphone";
                 try {
                     phone = URLEncoder.encode(device_model+"("+version_release+")","gbk");
                 } catch (UnsupportedEncodingException e) {
