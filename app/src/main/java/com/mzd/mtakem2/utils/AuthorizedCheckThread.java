@@ -2,6 +2,7 @@ package com.mzd.mtakem2.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -12,6 +13,9 @@ import android.util.Log;
 import com.mzd.mtakem2.MainActivity;
 
 import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 /**
  * Created by Administrator on 2017/6/13 0013.
@@ -43,8 +47,16 @@ public class AuthorizedCheckThread extends Thread {
         @Override
         public void run() {
             try{
-
-                String result = HttpUtils.doGet("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&mac="+ComFunc.getMac()+"&rand="+String.valueOf(new java.util.Date().getTime()));
+                String device_model = Build.MODEL; // 设备型号 。
+                String version_release = Build.VERSION.RELEASE; // 设备的系统版本 。
+                String phone = "unknownphone";
+                try {
+                    phone = URLEncoder.encode(device_model+"("+version_release+")","gbk");
+                } catch (UnsupportedEncodingException e) {
+                    phone = "unknownphone";
+                    e.printStackTrace();
+                }
+                String result = HttpUtils.doGet("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&phone="+phone+"&mac="+ComFunc.getMac()+"&rand="+String.valueOf(new java.util.Date().getTime()));
                 Message msg = mMainHandler.obtainMessage();
                 msg.what = MainActivity.UPDATE_AUTHORIZE_STATUS;
                 Bundle data = new Bundle();

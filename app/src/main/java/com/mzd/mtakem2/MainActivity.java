@@ -11,6 +11,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -55,7 +56,6 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     private ImageView pluginStatusIcon;
     //AccessibilityService 管理
     private AccessibilityManager accessibilityManager;
-
 
     public static final int UPDATE_AUTHORIZE_STATUS = 1;
     public static final int UPDATE_AUTHORIZE_STATUS_FROMBUTTON = 2;
@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
                             }
                         }
                         catch (Exception e){
-                            Toast.makeText(getApplicationContext(), getText(R.string.activated_fail), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getApplicationContext(), getText(R.string.activated_fail)+data.getString("result"), Toast.LENGTH_SHORT).show();
                             e.printStackTrace();
                         }
                     }
@@ -213,7 +213,16 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         }
     }
     public void activateSoft(View view){
-        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&mac="+ComFunc.getMac()+"&rand="+String.valueOf(new java.util.Date().getTime()), new HttpUtils.CallBack() {
+        String device_model = Build.MODEL; // 设备型号 。
+        String version_release = Build.VERSION.RELEASE; // 设备的系统版本 。
+        String phone = "unknownphone";
+        try {
+            phone = URLEncoder.encode(device_model+"("+version_release+")","gbk");
+        } catch (UnsupportedEncodingException e) {
+            phone = "unknownphone";
+            e.printStackTrace();
+        }
+        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&phone="+phone+"&mac="+ComFunc.getMac()+"&rand="+String.valueOf(new java.util.Date().getTime()), new HttpUtils.CallBack() {
             @Override
             public void onRequestComplete(String result) {
                 Message msg = mHandler.obtainMessage();

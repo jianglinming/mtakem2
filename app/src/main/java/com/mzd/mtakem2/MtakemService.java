@@ -73,20 +73,20 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     private boolean bUnpackedSuccessful = false;//成功打开HB
     private boolean bAutoMode = false;//后台全自动抢HB模式，抢完红包自动回桌面
-    private boolean bIgnoreNotify = false;//忽略通知处理，通知的红包信息忽略，专注单窗钱红包
-    private boolean bIgnoreChatList = false;//忽略列表消息，提高单床抢HB
+    private boolean bEnableNotifyWatch = false;//忽略通知处理，通知的红包信息忽略，专注单窗钱红包
+    private boolean bEnableChatListWatch = false;//忽略列表消息，提高单床抢HB
     private boolean bAutoReply = false; //收到红包后自动回复
     private long autoReplyDelay = 1000;
     private boolean bCanUse = true;
 
     Handler mHander = new Handler();
 
-    private boolean bAutoClickNotify = false;
     private boolean bAutoClickChatList = false;
     private boolean bAutoClickHbItem = false;
     private boolean bAutoClickOpenDetail = false;//这个标志为用于实现收到打开HB详情是，详情不自动返回的功能
     private boolean bAutoClickOpenButton = false;
-    private boolean bAutoClickBack = false;
+
+
 
     private SharedPreferences sharedPreferences;
 
@@ -224,8 +224,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
         bAutoMode = sharedPreferences.getBoolean("autoMode", false);
-        bIgnoreNotify = sharedPreferences.getBoolean("check_box_ignorenotify", false);
-        bIgnoreChatList = sharedPreferences.getBoolean("check_box_ignorechatlist", false);
+        bEnableNotifyWatch = sharedPreferences.getBoolean("check_box_ignorenotify", false);
+        bEnableChatListWatch = sharedPreferences.getBoolean("check_box_ignorechatlist", false);
         bAutoReply = sharedPreferences.getBoolean("check_box_autoReply", false);
         autoReplyDelay = Integer.parseInt(sharedPreferences.getString("edit_text_autoReplyDelay", "1000"));
         bCanUse = sharedPreferences.getBoolean("canUse", true);
@@ -238,10 +238,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             bAutoMode = sharedPreferences.getBoolean(key, false);
         }
         if (key.equals("check_box_ignorenotify")) {
-            bIgnoreNotify = sharedPreferences.getBoolean(key, false);
+            bEnableNotifyWatch = sharedPreferences.getBoolean(key, false);
         }
         if (key.equals("check_box_ignorechatlist")) {
-            bIgnoreChatList = sharedPreferences.getBoolean(key, false);
+            bEnableChatListWatch = sharedPreferences.getBoolean(key, false);
         }
         if (key.equals("check_box_autoReply")) {
             bAutoReply = sharedPreferences.getBoolean(key, false);
@@ -314,13 +314,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             notify_detect_tm = Calendar.getInstance().getTimeInMillis();
                             chatlist_detect_tm = 0;
                             detect_tm = 0;
-                            bAutoClickNotify = true;
                             mHander.postDelayed(runnable, 6000);
                             bAutoClickOpenDetail = false;
                             bAutoClickChatList = false;
                             bAutoClickHbItem = false;
                             bAutoClickOpenButton = false;
-                            bAutoClickBack = false;
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -433,7 +431,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
         switch (event.getEventType()) {
             case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED: {
-                if ((bIgnoreNotify) && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
+                if ((bEnableNotifyWatch) && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
                     Notification notification = (Notification) event.getParcelableData();
                     String content = notification.tickerText != null ? notification.tickerText.toString() : "";
                     if (content.contains("[微信红包]")) {
@@ -474,29 +472,32 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     AccessibilityNodeInfo hd = getRootInActiveWindow();
                     if (hd != null) {
                         //列表
-                        if (bIgnoreChatList && !bAutoClickChatList) {
-                            //6.5.7是afx,6.5.8变为agy
-                            List<AccessibilityNodeInfo> nodeInfos1 = hd.findAccessibilityNodeInfosByViewId(CHATLISTTEXT_STRING_ID);
-                            //找到了有消息条目，说明就进入了窗口了
-                            if (nodeInfos1 != null && !nodeInfos1.isEmpty()) {
-                                AccessibilityNodeInfo findNode = null;
-                                for (int i = 0; i < nodeInfos1.size(); i++) {
-                                    if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
-                                        findNode = nodeInfos1.get(i);
-                                        try {
-                                            AccessibilityNodeInfo clickableParentNode = findNode.getParent().getParent().getParent().getParent();
-                                            //如果有新消息提醒的话，就点击这个可以用android studio 中的adm的"Dump View hierarchy for UI Automator"层次关系
-                                            if (clickableParentNode.getChild(0).getChildCount() > 1) {
-                                                clickableParentNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                Log.i(TAG, "点击窗口列表");
-                                                chatlist_detect_tm = Calendar.getInstance().getTimeInMillis();
-                                                notify_detect_tm = 0;
-                                                detect_tm = 0;
-                                                bAutoClickChatList = true;
-                                                break;
+                        if(bEnableChatListWatch) {
+                            List<AccessibilityNodeInfo> nodeSnds = hd.findAccessibilityNodeInfosByViewId(SOUNDBUTTON_STRING_ID);
+                            if (nodeSnds!=null&&nodeSnds.isEmpty()&&!bAutoClickChatList) {
+                                //6.5.7是afx,6.5.8变为agy
+                                List<AccessibilityNodeInfo> nodeInfos1 = hd.findAccessibilityNodeInfosByViewId(CHATLISTTEXT_STRING_ID);
+                                //找到了有消息条目，说明就进入了窗口了
+                                if (nodeInfos1 != null && !nodeInfos1.isEmpty()) {
+                                    AccessibilityNodeInfo findNode = null;
+                                    for (int i = 0; i < nodeInfos1.size(); i++) {
+                                        if (nodeInfos1.get(i).getText().toString().contains("[微信红包]")) {
+                                            findNode = nodeInfos1.get(i);
+                                            try {
+                                                AccessibilityNodeInfo clickableParentNode = findNode.getParent().getParent().getParent().getParent();
+                                                //如果有新消息提醒的话，就点击这个可以用android studio 中的adm的"Dump View hierarchy for UI Automator"层次关系
+                                                if (clickableParentNode.getChild(0).getChildCount() > 1) {
+                                                    clickableParentNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                    Log.i(TAG, "点击窗口列表");
+                                                    chatlist_detect_tm = Calendar.getInstance().getTimeInMillis();
+                                                    notify_detect_tm = 0;
+                                                    detect_tm = 0;
+                                                    bAutoClickChatList = true;
+                                                    break;
+                                                }
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
                                             }
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
                                         }
                                     }
                                 }
@@ -545,8 +546,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                 } else if (className.contains("luckymoney.ui.En_")) {
                     AccessibilityNodeInfo hd = getRootInActiveWindow();
-                    bAutoClickChatList = false;
-                    bAutoClickHbItem = false;
                     if (!bAutoClickOpenButton) {
                         List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
                         if (hbNodes != null && !hbNodes.isEmpty()) {
@@ -561,10 +560,13 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             boolean hasNodes = hasOneOfThoseNodes(
                                     WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH, WECHAT_WHOGIVEYOUAHB);
                             if (hasNodes) {
-                                performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
+                                if(bAutoClickHbItem) performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
+                                else bAutoClickOpenDetail = false;
                             }
                         }
                     }
+                    bAutoClickChatList = false;
+                    bAutoClickHbItem = false;
 
                 } else if (className.contains("luckymoney.ui.LuckyMoneyDetailUI")) {
                     AccessibilityNodeInfo hd = getRootInActiveWindow();
@@ -602,7 +604,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                             if (bAutoClickOpenDetail) {
                                 performGlobalAction(GLOBAL_ACTION_BACK);
-                                Log.i(TAG, "抢完后返回");
                                 bAutoClickOpenDetail = false;
                             }
                         }
