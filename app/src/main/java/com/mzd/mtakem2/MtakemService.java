@@ -30,6 +30,7 @@ import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
+import android.widget.RemoteViews;
 
 import com.mzd.mtakem2.utils.ComFunc;
 import com.mzd.mtakem2.utils.HbDataCheckThread;
@@ -306,7 +307,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
                     Notification notification = (Notification) event.getParcelableData();
                     String content = notification.tickerText != null ? notification.tickerText.toString() : "";
-                    //Log.i(TAG, content.toString());
+
+                    Bundle bundle = notification.extras;
+                    Log.i(TAG,bundle.getString(Notification.EXTRA_TITLE));
                     if (content.contains("[微信红包]")) {
                         PendingIntent pendingIntent = notification.contentIntent;
                         try {
