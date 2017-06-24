@@ -40,7 +40,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentStart="true"
-                android:layout_margin="10dp"
+                android:layout_margin="2dp"
                 android:layout_weight="0.00"
                 android:text="TextView"
                 android:textAlignment="center"
@@ -50,10 +50,19 @@
                 tools:textAlignment="center" />
 
             <TextView
+                android:id="@+id/txtWxUser"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="()"
+                android:textAlignment="center"
+                android:textColor="#fff" />
+
+            <TextView
                 android:id="@+id/txtVer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="10dp"
+                android:layout_margin="2dp"
                 android:layout_weight="0.00"
                 android:text="TextView"
                 android:textAlignment="center"
@@ -63,10 +72,11 @@
                 android:id="@+id/txtActivateMsg"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="10dp"
+                android:layout_margin="2dp"
                 android:layout_weight="0.12"
                 android:textAlignment="center"
                 android:textColor="#fff" />
+
         </LinearLayout>
 
         <LinearLayout

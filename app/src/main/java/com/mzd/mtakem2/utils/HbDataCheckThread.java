@@ -2,10 +2,12 @@ package com.mzd.mtakem2.utils;
 
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.mzd.mtakem2.HbHistory;
@@ -72,6 +74,8 @@ public class HbDataCheckThread extends Thread {
                             item.put("device", Build.MODEL + "(" + Build.VERSION.RELEASE + ")");
                             item.put("machine_id", ComFunc.getMac());
                             item.put("mtakem2ver", ComFunc.getVersion(mContext));
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                            item.put("wxUser",sharedPreferences.getString("wxUser",""));
                             int j = 0;
                             for (j = 0; j < c.getColumnCount(); j++) {
                                 item.put(c.getColumnName(j), c.getString(j));

@@ -24,6 +24,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresApi;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -88,7 +89,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bAutoClickOpenButton = false;
 
 
-
     private SharedPreferences sharedPreferences;
 
     private long detect_tm = 0;
@@ -97,8 +97,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     private String mac = "";
     private String app_ver = "";
-    String device_model = Build.MODEL; // 设备型号 。
-    String version_release = Build.VERSION.RELEASE; // 设备的系统版本 。
+    private String device_model = Build.MODEL; // 设备型号 。
+    private String version_release = Build.VERSION.RELEASE; // 设备的系统版本 。
+
 
     //聊天窗中的讲话按钮，用来区分当前页面是聊天窗口，还是聊天列表窗口
     // 6.5.7：a3_  ,6.5.8:a47
@@ -144,11 +145,37 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     //6.5.7: , 6.5.8:big
     private static final String HBCONTENT_STRING_ID = "com.tencent.mm:id/big";
 
+    //聊天窗返回列表窗返回箭头
+    //6.5.8:gn
+    private static final String HBRETURN_STRING_ID = "com.tencent.mm:id/gn";
+
+    //wx聊天列表下面的按钮ID
+    //6.5.8:buh
+    private static final String HBBOTTOMBTN_STRING_ID = "com.tencent.mm:id/buh";
+
+    //wx名称的textid
+    //6.5.8:by2
+    private static final String HBWXUSER_STRING_ID = "com.tencent.mm:id/by2";
+
+    //群信息的列表ID
+    //6.5.8:list
+    private static final String HBGROUPLIST_STRING_ID = "android:id/list";
+
+    //删除并退出按钮
+    //6.5.8:title
+    private static final String HBDELANDQUIT_STRING_ID = "android:id/title";
+
+    //删除并退出确认按钮
+    //6.5.8:ad8
+    private static final String HBDELANDQUITCONFIRM_STRING_ID = "com.tencent.mm:id/ad8";
+
+
 
     private String windowtitle = "";
     private String sender = "";
     private String hbcontent = "";
     private String hb_amount = "";
+    private String wx_user = "";
     private String last_context_string = "";
     private HbDataCheckThread hbDataCheckThread;
     private Object lockkey;
@@ -230,7 +257,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         bAutoReply = sharedPreferences.getBoolean("check_box_autoReply", false);
         autoReplyDelay = Integer.parseInt(sharedPreferences.getString("edit_text_autoReplyDelay", "1000"));
         bCanUse = sharedPreferences.getBoolean("canUse", true);
-
+        wx_user = sharedPreferences.getString("wxUser","");
     }
 
     @Override
@@ -252,6 +279,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
         if (key.equals("canUse")) {
             bCanUse = sharedPreferences.getBoolean(key, true);
+        }
+        if (key.equals("wxUser")) {
+            wx_user = sharedPreferences.getString("wxUser","");
         }
     }
 
@@ -277,9 +307,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 } else {
                     manMode(event);
                 }
-            }
-            else{
-                Log.i(TAG,"辅助功能不能使用");
+            } else {
+                Log.i(TAG, "辅助功能不能使用");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -300,7 +329,57 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         return false;
     }
 
-    private void autoDealHb(AccessibilityEvent event) throws JSONException {
+
+    /*
+        退出出群聊过程，进入群聊窗口后执行。
+     */
+    private void quitFromGroup(AccessibilityEvent event) throws InterruptedException {
+        AccessibilityNodeInfo hd = getRootInActiveWindow();
+        if (hd != null) {
+            if ("com.tencent.mm.plugin.chatroom.ui.ChatroomInfoUI".equals(event.getClassName())) {
+                int i = 0;
+                for (i = 0; i < 10; i++) {
+                    List<AccessibilityNodeInfo> listHds = hd.findAccessibilityNodeInfosByViewId( HBGROUPLIST_STRING_ID );
+                    if (listHds != null && !listHds.isEmpty()) {
+                        for (AccessibilityNodeInfo listHd : listHds) {
+                            listHd.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                        }
+                    }
+                    List<AccessibilityNodeInfo> titleHds = hd.findAccessibilityNodeInfosByViewId( HBDELANDQUIT_STRING_ID );
+                    if (titleHds != null && !titleHds.isEmpty()) {
+                        for (AccessibilityNodeInfo titleHd : titleHds) {
+                            Log.i(TAG, "i=" + String.valueOf(i));
+                            if ("删除并退出".equals(titleHd.getText())) {
+                                Log.i(TAG, "找到退出");
+                                if (titleHd.getParent() != null) {
+                                    titleHd.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                }
+                                i = 10;
+                                break;
+                            }
+                        }
+                    }
+                    Thread.sleep(100);
+                }
+            }
+
+            if ("com.tencent.mm.ui.base.h".equals(event.getClassName())) {
+                int i = 0;
+                for (i = 0; i < 10; i++) {
+                    List<AccessibilityNodeInfo> confirmNodes = hd.findAccessibilityNodeInfosByViewId( HBDELANDQUITCONFIRM_STRING_ID );
+
+                    for (AccessibilityNodeInfo confirmNode : confirmNodes) {
+                        confirmNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        i = 10;
+                    }
+                    Thread.sleep(100);
+                }
+
+            }
+        }
+    }
+
+    private void autoDealHb(AccessibilityEvent event) throws JSONException, InterruptedException {
         //一旦有动静，在自动模式下，就执行窗口置后。
         switch (event.getEventType()) {
             case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED: {
@@ -309,7 +388,17 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     String content = notification.tickerText != null ? notification.tickerText.toString() : "";
 
                     Bundle bundle = notification.extras;
-                    Log.i(TAG,bundle.getString(Notification.EXTRA_TITLE));
+                    String group_name = bundle.getString(Notification.EXTRA_TITLE);
+                    group_name = group_name!=null?group_name:"";
+                    // Log.i(TAG,bundle.getString(Notification.EXTRA_TITLE));
+                    // Log.i(TAG,bundle.getString(Notification.EXTRA_TEXT));
+                    try {
+                        rdnonhbInfo(group_name, wx_user, content.length());
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+
+                   //Log.i(TAG, bundle.toString());
                     if (content.contains("[微信红包]")) {
                         PendingIntent pendingIntent = notification.contentIntent;
                         try {
@@ -324,6 +413,16 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             bAutoClickOpenButton = false;
                         } catch (Exception e) {
                             e.printStackTrace();
+                        }
+                    } else {
+                        if ("".equals(wx_user)) {
+                            PendingIntent pendingIntent = notification.contentIntent;
+                            try {
+                                pendingIntent.send();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            wx_user = getWxUserName();
                         }
                     }
                 }
@@ -431,7 +530,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     }
 
     private void manMode(AccessibilityEvent event) throws JSONException {
-
         switch (event.getEventType()) {
             case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED: {
                 if ((bEnableNotifyWatch) && event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
@@ -475,9 +573,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     AccessibilityNodeInfo hd = getRootInActiveWindow();
                     if (hd != null) {
                         //列表
-                        if(bEnableChatListWatch) {
+                        if (bEnableChatListWatch) {
                             List<AccessibilityNodeInfo> nodeSnds = hd.findAccessibilityNodeInfosByViewId(SOUNDBUTTON_STRING_ID);
-                            if (nodeSnds!=null&&nodeSnds.isEmpty()&&!bAutoClickChatList) {
+                            if (nodeSnds != null && nodeSnds.isEmpty() && !bAutoClickChatList) {
                                 //6.5.7是afx,6.5.8变为agy
                                 List<AccessibilityNodeInfo> nodeInfos1 = hd.findAccessibilityNodeInfosByViewId(CHATLISTTEXT_STRING_ID);
                                 //找到了有消息条目，说明就进入了窗口了
@@ -563,7 +661,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             boolean hasNodes = hasOneOfThoseNodes(
                                     WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH, WECHAT_WHOGIVEYOUAHB);
                             if (hasNodes) {
-                                if(bAutoClickHbItem) performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
+                                if (bAutoClickHbItem)
+                                    performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
                                 else bAutoClickOpenDetail = false;
                             }
                         }
@@ -615,6 +714,52 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
             break;
         }
+    }
+
+    private String getWxUserName() throws InterruptedException {
+
+        int i = 0;
+        try {
+            boolean bClickReturn1 = false;
+            for (i = 0; i < 30; i++) {
+                AccessibilityNodeInfo hd = getRootInActiveWindow();
+                if(hd!=null) {
+                    if (!bClickReturn1) {
+                        List<AccessibilityNodeInfo> goes = hd.findAccessibilityNodeInfosByViewId( HBRETURN_STRING_ID );
+                        if (goes != null && !goes.isEmpty()) {
+                            for (AccessibilityNodeInfo go : goes) {
+                                go.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            }
+                            bClickReturn1 = true;
+                        }
+                    }
+                    if (bClickReturn1) {
+                        List<AccessibilityNodeInfo> bottomBtns = hd.findAccessibilityNodeInfosByViewId( HBBOTTOMBTN_STRING_ID );
+                        for (AccessibilityNodeInfo bottomBtn : bottomBtns) {
+                            if ("我".equals(bottomBtn.getText())) {
+                                bottomBtn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            }
+                        }
+                        List<AccessibilityNodeInfo> wxnames = hd.findAccessibilityNodeInfosByViewId( HBWXUSER_STRING_ID );
+                        for (AccessibilityNodeInfo wxname : wxnames) {
+                            back2Home();
+                            Log.i(TAG, "wxUser:" + wxname.getText().toString());
+                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                            editor.putString("wxUser",wxname.getText().toString());
+                            editor.commit();
+                            return wxname.getText().toString();
+                        }
+                    }
+                }
+                Thread.sleep(100);
+            }
+            back2Home();
+        } catch (Exception e) {
+            Log.i(TAG, "error");
+            e.printStackTrace();
+        }
+        return "";
     }
 
     /*根据系统的配置，随机获得回复的词语*/
@@ -716,7 +861,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     /*
             得到当前窗口所有的不管活不活动，或则他的z-index在下面的窗口
      */
-    /*private ArrayList<AccessibilityNodeInfo> getNodesFromWindows() {
+    /*
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private ArrayList<AccessibilityNodeInfo> getNodesFromWindows() {
         List<AccessibilityWindowInfo> windows = getWindows();
         ArrayList<AccessibilityNodeInfo> nodes =
                 new ArrayList<AccessibilityNodeInfo>();
@@ -802,6 +949,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
         item.put("device", device_model + "(" + version_release + ")");
         item.put("machine_id", mac);
+        item.put("wxUser", wx_user);
         item.put("mtakem2ver", app_ver);
         item.put("group_name", values.getAsString("group_name"));
         item.put("sender", values.getAsString("sender"));
@@ -865,6 +1013,50 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     }
 
+    private void rdnonhbInfo(String group_name,String wxUser,int len) throws JSONException {
+        final JSONObject obj = new JSONObject();
+        JSONArray array = new JSONArray();
+        JSONObject item = new JSONObject();
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
+        item.put("group_name",group_name);
+        item.put("wxUser",wxUser);
+        item.put("len",len);
+        item.put("receive_time",df.format(new java.util.Date()));
+        array.put(item);
+        obj.put("total",1);
+        obj.put("rows",array);
+
+        //创建后台线程，获取远程版本
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection conn = null;
+                boolean bUploadSuccessful = false;
+                try {
+                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=inserthistory&strHistory=" + URLEncoder.encode(obj.toString(), "utf-8"));
+                    conn = (HttpURLConnection) url
+                            .openConnection();
+                    //使用GET方法获取
+                    conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(5000);
+                    int code = conn.getResponseCode();
+                    if (code == 200) {
+                        InputStream is = conn.getInputStream();
+                        String result = readMyInputStream(is);
+                        Log.i(TAG, URLDecoder.decode(result, "gbk"));
+                        JSONObject objResult = new JSONObject(URLDecoder.decode(result, "gbk"));
+                        if (objResult.getBoolean("result")) {
+                            Log.i(TAG, "上传成功:" + objResult.getString("msg"));
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (conn != null) conn.disconnect();
+                }
+            }
+        }).start();
+    }
     /*
         读取服务器反馈
      */

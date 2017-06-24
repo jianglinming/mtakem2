@@ -33,6 +33,7 @@ public class HbHistory extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE hblist (id INTEGER PRIMARY KEY AUTOINCREMENT,group_name TEXT,sender TEXT, content TEXT," +
                 " unpacked_time TEXT, notify_consuming INT,chatlist_consuming INT,chatwindow_consuming INT,hb_amount REAL)");
+        //db.execSQL("CREATE TABLE nohb (id INTEGER PRIMARY KEY AUTOINCREMENT,group_name TEXT,wxUser TEXT,receive_time TEXT,len INT)");//预留离线保存历史记录
         Log.i(TAG, "创建数据表");
     }
     @Override

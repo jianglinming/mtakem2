@@ -19,6 +19,8 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.ImageView;
@@ -120,15 +122,42 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     });
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.option_menu,menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        //super.onOptionsItemSelected(item);
+        switch (item.getItemId()){
+            case R.id.resetwxuser:{
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("wxUser","");
+                editor.commit();
+                TextView txtWxUser = (TextView)findViewById(R.id.txtWxUser);
+                txtWxUser.setText("()");
+            }
+            break;
+        }
+        return true;
+    }
+
+    @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         LinearLayout linearLayout = (LinearLayout)findViewById(R.id.lbtn_activate);
         if (key.equals("canUse")) {
-            Log.i(TAG,"canUsechage");
             if(sharedPreferences.getBoolean(key, true)){
                 linearLayout.setClickable(false);
             }else{
                 linearLayout.setClickable(true);
             }
+        }
+        if(key.equals("wxUser")){
+            TextView txtWxUser = (TextView)findViewById(R.id.txtWxUser);
+            txtWxUser.setText("("+sharedPreferences.getString("wxUser","")+")");
         }
     }
 
@@ -146,6 +175,12 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
 
         pluginStatusText = (TextView) findViewById(R.id.textView3);
         pluginStatusIcon = (ImageView) findViewById(R.id.imageView);
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+        TextView txtWxUser = (TextView)findViewById(R.id.txtWxUser);
+        txtWxUser.setText("("+sharedPreferences.getString("wxUser","")+")");
+
 
         //监听AccessibilityService 变化
         accessibilityManager = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
