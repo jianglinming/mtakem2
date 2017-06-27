@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
 
         //获得mac地址
         TextView txtMac = (TextView) findViewById(R.id.txtMac);
-        txtMac.setText(ComFunc.getMac());
+        txtMac.setText(ComFunc.getDeviceId(this));
         //获得版本
         TextView txtVer = (TextView) findViewById(R.id.txtVer);
         txtVer.setText(ComFunc.getVersion(this));
@@ -219,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
 
     //复制mac码
     public void copyMactoClip(View view){
-        ClipData clip = ClipData.newPlainText("label", ComFunc.getMac());
+        ClipData clip = ClipData.newPlainText("label", ComFunc.getDeviceId(this));
         ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         clipboardManager.setPrimaryClip(clip);
         Toast.makeText(this, "已将本机Mac码复制到粘贴板", Toast.LENGTH_SHORT).show();
@@ -257,7 +257,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             phone = "unknownphone";
             e.printStackTrace();
         }
-        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&phone="+phone+"&mac="+ComFunc.getMac()+"&rand="+String.valueOf(new java.util.Date().getTime()), new HttpUtils.CallBack() {
+        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&phone="+phone+"&mac="+ComFunc.getDeviceId(this)+"&rand="+String.valueOf(new java.util.Date().getTime()), new HttpUtils.CallBack() {
             @Override
             public void onRequestComplete(String result) {
                 Message msg = mHandler.obtainMessage();

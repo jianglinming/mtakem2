@@ -2,8 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mzd.mtakem2"
     android:versionCode="1"
-    android:versionName="v1.1.1.2017062401_beta">
+    android:versionName="v1.1.1.2017062701_beta">
 
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 在SDCard中创建与删除文件权限 -->

@@ -231,7 +231,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     protected void onServiceConnected() {
         super.onServiceConnected();
         Log.i(TAG, "onServiceConnected");
-        mac = ComFunc.getMac();
+        mac = ComFunc.getDeviceId(getApplicationContext());
         app_ver = ComFunc.getVersion(this);
         Log.i(TAG, "APP Ver:" + app_ver);
         Log.i(TAG, "Mac :" + mac);

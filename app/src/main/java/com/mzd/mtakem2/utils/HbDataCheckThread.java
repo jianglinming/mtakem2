@@ -72,7 +72,7 @@ public class HbDataCheckThread extends Thread {
                         JSONObject item = new JSONObject();
                         if (c.moveToNext()) {
                             item.put("device", Build.MODEL + "(" + Build.VERSION.RELEASE + ")");
-                            item.put("machine_id", ComFunc.getMac());
+                            item.put("machine_id", ComFunc.getDeviceId(mContext));
                             item.put("mtakem2ver", ComFunc.getVersion(mContext));
                             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                             item.put("wxUser",sharedPreferences.getString("wxUser",""));
