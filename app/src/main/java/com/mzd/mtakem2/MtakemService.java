@@ -379,6 +379,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
     }
 
+    private void joingroup(AccessibilityEvent event){
+        Log.i(TAG,"joingroup");
+        AccessibilityNodeInfo hd = getRootInActiveWindow();
+        if(hd!=null){
+
+        }
+    }
+
     private void autoDealHb(AccessibilityEvent event) throws JSONException, InterruptedException {
         //一旦有动静，在自动模式下，就执行窗口置后。
         switch (event.getEventType()) {
@@ -398,7 +406,18 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         e.printStackTrace();
                     }
 
-                   //Log.i(TAG, bundle.toString());
+                   Log.i(TAG,content.toString());
+                    if(content.contains("[链接] 邀请你加入群聊")){
+                        PendingIntent pendingIntent = notification.contentIntent;
+                        try{
+                            pendingIntent.send();
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                        }
+                        joingroup(event);
+                    }
+
                     if (content.contains("[微信红包]")) {
                         PendingIntent pendingIntent = notification.contentIntent;
                         try {
@@ -1043,10 +1062,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     if (code == 200) {
                         InputStream is = conn.getInputStream();
                         String result = readMyInputStream(is);
-                        Log.i(TAG, URLDecoder.decode(result, "gbk"));
+                        //Log.i(TAG, URLDecoder.decode(result, "gbk"));
                         JSONObject objResult = new JSONObject(URLDecoder.decode(result, "gbk"));
                         if (objResult.getBoolean("result")) {
-                            Log.i(TAG, "上传成功:" + objResult.getString("msg"));
+                           // Log.i(TAG, "上传成功:" + objResult.getString("msg"));
                         }
                     }
                 } catch (Exception e) {
