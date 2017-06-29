@@ -31,4 +31,15 @@
         android:key="check_box_ignorechatlist"
         android:title="值守使能列表" />
 
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="autoRecept"
+        android:title="自动接受加群邀请" />
+    <EditTextPreference
+        android:key="autoParam"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="240 350"
+        android:title="自动加入按钮坐标" />
+
 </PreferenceScreen>
