@@ -61,6 +61,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Objects;
 import java.util.Vector;
 import java.util.concurrent.Exchanger;
 
@@ -86,6 +87,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bAutoReply = false; //收到红包后自动回复
     private boolean bAutoReceptGroup = false;
     private String autoReceptParam = "240 350";
+    private boolean bAutoQuitGroup = false;
+
+    private String blackGroup = "";
+    private java.util.Date blackGroupStTime;
+    private Object blackSyncKey;
 
     private long autoReplyDelay = 1000;
     private boolean bCanUse = true;
@@ -251,6 +257,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         hbDataCheckThread = new HbDataCheckThread(getApplicationContext(), lockkey);
         hbDataCheckThread.start();
 
+        blackGroupStTime = new java.util.Date(new java.util.Date().getTime()+30*1000);
+        blackSyncKey = new Object();
+
         //动态增加FLAG配置，注意这非常重要，这个将使得能获取窗体的全部完整的节点。
         AccessibilityServiceInfo info = getServiceInfo();
         info.flags = info.flags | AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS | AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS | AccessibilityServiceInfo.FLAG_REQUEST_ENHANCED_WEB_ACCESSIBILITY;
@@ -266,8 +275,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         autoReplyDelay = Integer.parseInt(sharedPreferences.getString("edit_text_autoReplyDelay", "1000"));
         bCanUse = sharedPreferences.getBoolean("canUse", true);
         wx_user = sharedPreferences.getString("wxUser", "");
-        bAutoReceptGroup = sharedPreferences.getBoolean("autoRecept",false);
-        autoReceptParam = sharedPreferences.getString("autoParam","240 350");
+        bAutoReceptGroup = sharedPreferences.getBoolean("autoRecept", false);
+        autoReceptParam = sharedPreferences.getString("autoParam", "240 350");
+        bAutoQuitGroup = sharedPreferences.getBoolean("autoQuitGroup", false);
     }
 
     @Override
@@ -296,7 +306,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         if (key.equals("autoRecept")) {
             bAutoReceptGroup = sharedPreferences.getBoolean(key, false);
         }
-
+        if (key.equals("autoQuitGroup")) {
+            bAutoQuitGroup = sharedPreferences.getBoolean(key, false);
+        }
         if (key.equals("autoParam")) {
             autoReceptParam = sharedPreferences.getString("autoParam", "240 350");
         }
@@ -347,15 +359,31 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     }
 
 
-    /*
-        退出出群聊过程，进入群聊窗口后执行。
-     */
-    private void quitFromGroup(AccessibilityEvent event) throws InterruptedException {
-        AccessibilityNodeInfo hd = getRootInActiveWindow();
-        if (hd != null) {
-            if ("com.tencent.mm.plugin.chatroom.ui.ChatroomInfoUI".equals(event.getClassName())) {
-                int i = 0;
-                for (i = 0; i < 10; i++) {
+    private void syncQuitFromGroup(String group_name) throws InterruptedException {
+        int i = 0;
+        int nStatus = 0;
+        for (i = 0; i < 100; i++) {
+            AccessibilityNodeInfo hd = getRootInActiveWindow();
+
+            switch (nStatus) {
+                case 0: { //查找点击进入群信息按钮
+                    List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                    if (titleNodes != null && !titleNodes.isEmpty()) {
+                        List<AccessibilityNodeInfo> lChecks = hd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/g5");
+                        if (lChecks != null && !lChecks.isEmpty()) {
+                            //Log.i(TAG, "lCheckSize=" + String.valueOf(lChecks.size()));
+                            try {
+                                AccessibilityNodeInfo lCheck = lChecks.get(lChecks.size() - 1);
+                                lCheck.getChild(1).getChild(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                nStatus = 1;
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+                break;
+                case 1: {
                     List<AccessibilityNodeInfo> listHds = hd.findAccessibilityNodeInfosByViewId(HBGROUPLIST_STRING_ID);
                     if (listHds != null && !listHds.isEmpty()) {
                         for (AccessibilityNodeInfo listHd : listHds) {
@@ -365,37 +393,44 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     List<AccessibilityNodeInfo> titleHds = hd.findAccessibilityNodeInfosByViewId(HBDELANDQUIT_STRING_ID);
                     if (titleHds != null && !titleHds.isEmpty()) {
                         for (AccessibilityNodeInfo titleHd : titleHds) {
-                            Log.i(TAG, "i=" + String.valueOf(i));
-                            if ("删除并退出".equals(titleHd.getText())) {
+                            //Log.i(TAG, "i=" + String.valueOf(i));
+                            //if ("删除并退出".equals(titleHd.getText())) {//这个在4.4.4的android系统中不成立，但在android 6.0中成立很奇怪
+                            if (titleHd.getText() != null && titleHd.getText().toString().contains("删除并退出")) {
                                 Log.i(TAG, "找到退出");
                                 if (titleHd.getParent() != null) {
                                     titleHd.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                 }
-                                i = 10;
+                                nStatus = 2;
                                 break;
                             }
                         }
                     }
-                    Thread.sleep(100);
                 }
-            }
-
-            if ("com.tencent.mm.ui.base.h".equals(event.getClassName())) {
-                int i = 0;
-                for (i = 0; i < 10; i++) {
+                break;
+                case 2: {
                     List<AccessibilityNodeInfo> confirmNodes = hd.findAccessibilityNodeInfosByViewId(HBDELANDQUITCONFIRM_STRING_ID);
-
                     for (AccessibilityNodeInfo confirmNode : confirmNodes) {
                         confirmNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                        i = 10;
+                        i = 130;
+                        nStatus = 3;
+                        back2Home();
+                        Log.i(TAG, "退出成功");
+                        updateQuitResult(wx_user,group_name);
                     }
-                    Thread.sleep(100);
                 }
+                break;
 
             }
+            Thread.sleep(100);
         }
+        Log.i(TAG, "黑名单处理完毕");
+        back2Home();
+
     }
 
+    /*
+        自动接收邀请加群
+     */
     private void joingroup() throws InterruptedException {
         int i = 0;
         boolean bClickYqBtn = false;
@@ -414,9 +449,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     try {
                                         AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent();
                                         if (pNode.getClassName().toString().contains("FrameLayout")) {
-                                            pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                            Log.i(TAG,pNode.toString());
                                             bClickYqBtn = true;
+                                            pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                            //Log.i(TAG, pNode.toString());
+
                                             break;
                                         }
                                     } catch (Exception e) {
@@ -426,47 +462,48 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 if (!bClickYqBtn) {
                                     i = 180;
                                     back2Home();
-                                    Log.i(TAG,"假邀请，退出");
+                                    Log.i(TAG, "假邀请，退出");
                                 }
-                            }else{
+                            } else {
                                 i = 180;
                                 back2Home();
-                                Log.i(TAG,"假邀请");
+                                Log.i(TAG, "假邀请");
+                            }
+                        }
+                    }
+                    if (bClickYqBtn && !bClickJoinBtn) {
+                        List<AccessibilityNodeInfo> titleNodes1 = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                        if (titleNodes1 != null && titleNodes1.isEmpty()) {
+                            List<AccessibilityNodeInfo> qlTexts = hd.findAccessibilityNodeInfosByViewId("android:id/text1");
+                            if (qlTexts != null && !qlTexts.isEmpty()) {
+                                AccessibilityNodeInfo qlText = qlTexts.get(0);
+                                if (qlText.getText() != null && qlText.getText().toString().contains("群聊邀请")) {
+                                    try {
+                                        Log.i(TAG, "点击加入");
+                                        Thread.sleep(500);
+                                        execShellCmd("input tap " + autoReceptParam);
+                                        bClickJoinBtn = true;
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                        Log.i(TAG, e.getMessage());
+                                    }
+                                } else {
+                                    if (qlText.getText() != null) {
+                                        i = 130;
+                                        back2Home();
+                                        Log.i(TAG, "假群聊邀请页面,退出");
+                                    }
+                                }
                             }
                         }
                     }
 
-                    if(bClickYqBtn && !bClickJoinBtn){
-                        List<AccessibilityNodeInfo> qltitles = hd.findAccessibilityNodeInfosByText("群聊邀请");
-                        if(qltitles!=null && !qltitles.isEmpty()){
-                            List<AccessibilityNodeInfo> webviews = hd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/an6");
-                            Log.i(TAG,"webviews count:"+String.valueOf(webviews.size()));
-                            if(webviews!=null && !webviews.isEmpty()){
-                                AccessibilityNodeInfo webview = webviews.get(0);
-                                try{
-                                    AccessibilityNodeInfo pNodeInfo = webview.getChild(0).getChild(0);
-                                    //execShellCmd("input keyevent 3");
-                                    execShellCmd("input tap "+autoReceptParam);
-                                    pNodeInfo.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
-                                    pNodeInfo.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
-
-                                    bClickJoinBtn = true;
-                                }
-                                catch (Exception e){
-                                    e.printStackTrace();
-                                    Log.i(TAG,e.getMessage());
-                                }
-                                if(!bClickJoinBtn){
-                                    i = 130;
-                                    back2Home();
-                                    Log.i(TAG,"假邀请1 退出");
-                                }
-                            }
-                            else{
-                                i = 130;
-                                back2Home();
-                                Log.i(TAG,"假邀请1");
-                            }
+                    if (bClickJoinBtn) {
+                        List<AccessibilityNodeInfo> titleNodes1 = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                        if (titleNodes1 != null && !titleNodes1.isEmpty()) {
+                            Log.i(TAG, "已经成功群");
+                            i = 130;
+                            back2Home();
                         }
                     }
 
@@ -477,7 +514,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             Thread.sleep(100);
         }
         back2Home();
-        Log.i(TAG,"邀请检查完毕");
+        Log.i(TAG, "邀请检查完毕");
     }
 
     private void autoDealHb(AccessibilityEvent event) throws JSONException, InterruptedException {
@@ -487,19 +524,27 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
                     Notification notification = (Notification) event.getParcelableData();
                     String content = notification.tickerText != null ? notification.tickerText.toString() : "";
-
                     Bundle bundle = notification.extras;
+                    //get group name
                     String group_name = bundle.getString(Notification.EXTRA_TITLE);
                     group_name = group_name != null ? group_name : "";
-                    // Log.i(TAG,bundle.getString(Notification.EXTRA_TITLE));
-                    // Log.i(TAG,bundle.getString(Notification.EXTRA_TEXT));
+                    //get send person
+                    int endIndex = content.indexOf(":");
+                    String send_person = "";
+                    if (endIndex != -1) {
+                        send_person = content.substring(0, endIndex);
+                    }
+
+                    //upload msg
+                    Log.i(TAG, content);
                     try {
-                        rdnonhbInfo(group_name, wx_user, content.length());
+                        rdnonhbInfo(group_name, send_person, wx_user, content.length());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
 
-                    Log.i(TAG, content.toString());
+                    //Log.i(TAG, content.toString());
+                    //自动加群处理
                     if (bAutoReceptGroup && content.contains("[链接] 邀请你加入群聊")) {
                         PendingIntent pendingIntent = notification.contentIntent;
                         try {
@@ -507,8 +552,28 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        Log.i(TAG,"群聊自动加入");
+                        Log.i(TAG, "群聊自动加入");
                         joingroup();
+                    }
+
+                    //退群指令检查
+                    if (bAutoQuitGroup && blackGroup.contains("{={"+group_name+"}=}")) {
+                        PendingIntent pendingIntent = notification.contentIntent;
+                        try {
+                            pendingIntent.send();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        syncQuitFromGroup(group_name);
+                    }
+                    if(bAutoQuitGroup){
+                        java.util.Date d = new java.util.Date();
+                        if(d.getTime()>blackGroupStTime.getTime()){
+                            Log.i(TAG,"黑名单有效期过了,重新更新黑名单");
+                            synchronized (blackSyncKey) {
+                                blackGroup = "";
+                            }
+                        }
                     }
 
                     if (content.contains("[微信红包]")) {
@@ -1125,12 +1190,16 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     }
 
-    private void rdnonhbInfo(String group_name, String wxUser, int len) throws JSONException {
+    /*
+        上传历史情况
+     */
+    private void rdnonhbInfo(String group_name, String last_send_person, String wxUser, int len) throws JSONException {
         final JSONObject obj = new JSONObject();
         JSONArray array = new JSONArray();
         JSONObject item = new JSONObject();
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
         item.put("group_name", group_name);
+        item.put("last_send_person", last_send_person);
         item.put("wxUser", wxUser);
         item.put("len", len);
         item.put("receive_time", df.format(new java.util.Date()));
@@ -1158,8 +1227,53 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         //Log.i(TAG, URLDecoder.decode(result, "gbk"));
                         JSONObject objResult = new JSONObject(URLDecoder.decode(result, "gbk"));
                         if (objResult.getBoolean("result")) {
-                            // Log.i(TAG, "上传成功:" + objResult.getString("msg"));
+                            Log.i(TAG, "上传成功:" + URLDecoder.decode(result, "gbk"));
+                            synchronized (blackSyncKey) {
+                                if (blackGroup.equals("")) {
+                                    blackGroup = objResult.getString("blackGroup");
+                                    blackGroupStTime = new java.util.Date( new java.util.Date().getTime()+30*1000);
+                                }
+                            }
                         }
+
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (conn != null) conn.disconnect();
+                }
+            }
+        }).start();
+    }
+
+    /*
+        更新退出结果
+     */
+
+    private void updateQuitResult(final String wxUser,final String group_name){
+//创建后台线程，获取远程版本
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection conn = null;
+                boolean bUploadSuccessful = false;
+                try {
+                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=updatequitstatus&wxUser="+URLEncoder.encode(wxUser,"utf-8")+"&group_name="+URLEncoder.encode(group_name,"utf-8"));
+                    conn = (HttpURLConnection) url
+                            .openConnection();
+                    //使用GET方法获取
+                    conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(5000);
+                    int code = conn.getResponseCode();
+                    if (code == 200) {
+                        InputStream is = conn.getInputStream();
+                        String result = readMyInputStream(is);
+                       // Log.i(TAG, URLDecoder.decode(result, "gbk"));
+                        JSONObject objResult = new JSONObject(URLDecoder.decode(result, "gbk"));
+                        if (objResult.getBoolean("result")) {
+                            Log.i(TAG, URLDecoder.decode(objResult.getString("msg"), "gbk"));
+                        }
+
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -1194,9 +1308,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         return new String(result);
     }
 
-    /**这个要ROOT才行
+    /**
+     * 这个要ROOT才行
      * 执行shell命令
-     *z
+     * z
+     *
      * @param cmd
      */
     private void execShellCmd(String cmd) {
