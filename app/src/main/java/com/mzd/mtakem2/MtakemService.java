@@ -913,7 +913,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     if (bClickReturn1) {
                         List<AccessibilityNodeInfo> bottomBtns = hd.findAccessibilityNodeInfosByViewId(HBBOTTOMBTN_STRING_ID);
                         for (AccessibilityNodeInfo bottomBtn : bottomBtns) {
-                            if ("我".equals(bottomBtn.getText())) {
+                            if (bottomBtn.getText()!=null && bottomBtn.getText().toString().contains("我")) {
                                 bottomBtn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                             }
                         }
