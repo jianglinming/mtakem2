@@ -85,6 +85,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bEnableNotifyWatch = false;//忽略通知处理，通知的红包信息忽略，专注单窗钱红包
     private boolean bEnableChatListWatch = false;//忽略列表消息，提高单床抢HB
     private boolean bAutoReply = false; //收到红包后自动回复
+    private boolean bCloudChatRec = false;
     private boolean bAutoReceptGroup = false;
     private String autoReceptParam = "240 350";
     private boolean bAutoQuitGroup = false;
@@ -278,6 +279,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         bAutoReceptGroup = sharedPreferences.getBoolean("autoRecept", false);
         autoReceptParam = sharedPreferences.getString("autoParam", "240 350");
         bAutoQuitGroup = sharedPreferences.getBoolean("autoQuitGroup", false);
+        bCloudChatRec = sharedPreferences.getBoolean("cloudChatRec",false);
     }
 
     @Override
@@ -311,6 +313,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
         if (key.equals("autoParam")) {
             autoReceptParam = sharedPreferences.getString("autoParam", "240 350");
+        }
+        if(key.equals("cloudChatRec")){
+            bCloudChatRec = sharedPreferences.getBoolean("cloudChatRec",false);
         }
     }
 
@@ -537,10 +542,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                     //upload msg
                     Log.i(TAG, content);
-                    try {
-                        rdnonhbInfo(group_name, send_person, wx_user, content.length());
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    if(bCloudChatRec) {
+                        try {
+                            rdnonhbInfo(group_name, send_person, wx_user, content.length());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
 
                     //Log.i(TAG, content.toString());

@@ -33,6 +33,11 @@
 
     <CheckBoxPreference
         android:defaultValue="false"
+        android:key="cloudChatRec"
+        android:title="启用云聊天统计" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
         android:key="autoRecept"
         android:title="自动接受加群邀请" />
     <EditTextPreference

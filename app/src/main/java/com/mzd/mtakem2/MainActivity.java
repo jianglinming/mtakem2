@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
                         Bundle data = msg.getData();
                         updateAuthorizeStatus(data.getString("result"));
                         try {
-                            Log.i(TAG, data.getString("result"));
+                            //Log.i(TAG, data.getString("result"));
                             JSONObject obj = new JSONObject(data.getString("result"));
                             LinearLayout linearLayout = (LinearLayout) findViewById(R.id.lbtn_activate);
                             TextView textView = (TextView) findViewById(R.id.textView8);
@@ -239,22 +239,33 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             }
 
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString("verType", verType);
-            if ("automode".equals(verType)) {
-                editor.putBoolean("autoRecept", false);
-                editor.putBoolean("autoQuitGroup", false);
-            }
-            else if("advanced".equals(verType)){
+            String nowVerType = sharedPreferences.getString("verType","manmode");
+            if(!verType.equals(nowVerType)){
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("verType", verType);
+                if ("automode".equals(verType)) {
+                    editor.putBoolean("autoRecept", false);
+                    editor.putBoolean("autoQuitGroup", false);
+                    editor.putBoolean("cloudChatRec",false);
+                    Log.i(TAG,"启用无人值守版");
+                }
+                else if("advanced".equals(verType)){
+                    Log.i(TAG,"启用高级云服务版");
+                }
+                else{
+                    editor.putBoolean("autoMode", false);
+                    editor.putBoolean("check_box_autoReply", false);
+                    editor.putBoolean("autoRecept", false);
+                    editor.putBoolean("autoQuitGroup", false);
+                    editor.putBoolean("cloudChatRec",false);
+                    Log.i(TAG,"启用简易版");
+                }
+                editor.putBoolean("canUse", bCanUse);
+                editor.commit();
             }
             else{
-                editor.putBoolean("autoMode", false);
-                editor.putBoolean("check_box_autoReply", false);
-                editor.putBoolean("autoRecept", false);
-                editor.putBoolean("autoQuitGroup", false);
+                //Log.i(TAG,"相同版本模式");
             }
-            editor.putBoolean("canUse", bCanUse);
-            editor.commit();
 
         } catch (Exception e) {
             e.printStackTrace();
