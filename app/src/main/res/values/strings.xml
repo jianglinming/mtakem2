@@ -27,4 +27,7 @@
     <string name="aboutmsg">联系人：赵小姐\nQQ:1822492744</string>
     <string name="title_about">关于我们</string>
     <string name="resetwxuser">重置Wx用户</string>
+    <string name="manmode">简易版</string>
+    <string name="automode">无人值守版</string>
+    <string name="advanced">高级云服务版</string>
 </resources>

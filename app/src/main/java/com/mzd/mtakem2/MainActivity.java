@@ -50,7 +50,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements AccessibilityManager.AccessibilityStateChangeListener,SharedPreferences.OnSharedPreferenceChangeListener  {
+public class MainActivity extends AppCompatActivity implements AccessibilityManager.AccessibilityStateChangeListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = "MainActivity";
     //开关切换按钮
@@ -70,51 +70,48 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
                     case UPDATE_AUTHORIZE_STATUS: {
                         Bundle data = msg.getData();
                         updateAuthorizeStatus(data.getString("result"));
-                        try{
+                        try {
+                            Log.i(TAG, data.getString("result"));
                             JSONObject obj = new JSONObject(data.getString("result"));
-                            LinearLayout linearLayout = (LinearLayout)findViewById(R.id.lbtn_activate);
-                            TextView textView = (TextView)findViewById(R.id.textView8);
-                            if(obj.getBoolean("canuse")){
+                            LinearLayout linearLayout = (LinearLayout) findViewById(R.id.lbtn_activate);
+                            TextView textView = (TextView) findViewById(R.id.textView8);
+                            if (obj.getBoolean("canuse")) {
                                 linearLayout.setClickable(false);
                                 textView.setText(getText(R.string.activated_success));
-                            }
-                            else{
+                            } else {
                                 linearLayout.setClickable(true);
                                 textView.setText(getText(R.string.activate));
                             }
-                        }
-                        catch (Exception e){
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
                     break;
-                    case UPDATE_AUTHORIZE_STATUS_FROMBUTTON:{
+                    case UPDATE_AUTHORIZE_STATUS_FROMBUTTON: {
                         Bundle data = msg.getData();
                         updateAuthorizeStatus(data.getString("result"));
-                        try{
+                        try {
                             JSONObject obj = new JSONObject(data.getString("result"));
-                            LinearLayout linearLayout = (LinearLayout)findViewById(R.id.lbtn_activate);
-                            TextView textView = (TextView)findViewById(R.id.textView8);
-                            if(obj.getBoolean("canuse")){
+                            LinearLayout linearLayout = (LinearLayout) findViewById(R.id.lbtn_activate);
+                            TextView textView = (TextView) findViewById(R.id.textView8);
+                            if (obj.getBoolean("canuse")) {
                                 Toast.makeText(getApplicationContext(), getText(R.string.activated_success), Toast.LENGTH_SHORT).show();
                                 linearLayout.setClickable(false);
                                 textView.setText(getText(R.string.activated_success));
-                            }
-                            else{
+                            } else {
                                 Toast.makeText(getApplicationContext(), getText(R.string.soft_expired), Toast.LENGTH_SHORT).show();
                                 linearLayout.setClickable(true);
                                 textView.setText(getText(R.string.click_activate));
                             }
-                        }
-                        catch (Exception e){
-                            Toast.makeText(getApplicationContext(), getText(R.string.activated_fail)+data.getString("result"), Toast.LENGTH_SHORT).show();
+                        } catch (Exception e) {
+                            Toast.makeText(getApplicationContext(), getText(R.string.activated_fail) + data.getString("result"), Toast.LENGTH_SHORT).show();
                             e.printStackTrace();
                         }
                     }
                     break;
 
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             return false;
@@ -124,20 +121,20 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        getMenuInflater().inflate(R.menu.option_menu,menu);
+        getMenuInflater().inflate(R.menu.option_menu, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         //super.onOptionsItemSelected(item);
-        switch (item.getItemId()){
-            case R.id.resetwxuser:{
+        switch (item.getItemId()) {
+            case R.id.resetwxuser: {
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                 SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString("wxUser","");
+                editor.putString("wxUser", "");
                 editor.commit();
-                TextView txtWxUser = (TextView)findViewById(R.id.txtWxUser);
+                TextView txtWxUser = (TextView) findViewById(R.id.txtWxUser);
                 txtWxUser.setText("()");
             }
             break;
@@ -147,17 +144,17 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        LinearLayout linearLayout = (LinearLayout)findViewById(R.id.lbtn_activate);
+        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.lbtn_activate);
         if (key.equals("canUse")) {
-            if(sharedPreferences.getBoolean(key, true)){
+            if (sharedPreferences.getBoolean(key, true)) {
                 linearLayout.setClickable(false);
-            }else{
+            } else {
                 linearLayout.setClickable(true);
             }
         }
-        if(key.equals("wxUser")){
-            TextView txtWxUser = (TextView)findViewById(R.id.txtWxUser);
-            txtWxUser.setText("("+sharedPreferences.getString("wxUser","")+")");
+        if (key.equals("wxUser")) {
+            TextView txtWxUser = (TextView) findViewById(R.id.txtWxUser);
+            txtWxUser.setText("(" + sharedPreferences.getString("wxUser", "") + ")");
         }
     }
 
@@ -178,16 +175,16 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-        TextView txtWxUser = (TextView)findViewById(R.id.txtWxUser);
-        txtWxUser.setText("("+sharedPreferences.getString("wxUser","")+")");
+        TextView txtWxUser = (TextView) findViewById(R.id.txtWxUser);
+        txtWxUser.setText("(" + sharedPreferences.getString("wxUser", "") + ")");
 
 
         //监听AccessibilityService 变化
         accessibilityManager = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
         accessibilityManager.addAccessibilityStateChangeListener(this);
         updateServiceStatus();
-        new AuthorizedCheckThread(this,mHandler).start();
-        Log.i(TAG,"OnMainActivityCreate");
+        new AuthorizedCheckThread(this, mHandler).start();
+        Log.i(TAG, "OnMainActivityCreate");
     }
 
 
@@ -201,10 +198,11 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         }
     }
 
-    public void openabout(View view){
-        Intent intent = new Intent(this,AboutActivity.class);
+    public void openabout(View view) {
+        Intent intent = new Intent(this, AboutActivity.class);
         startActivity(intent);
     }
+
     //打开设置
     public void openSettings(View view) {
         Intent settingsIntent = new Intent(this, SettingsActivity.class);
@@ -213,12 +211,12 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
 
     //检查更新
     public void openCheckUpdate(View view) throws Exception {
-            Intent updateIntent = new Intent(this, UpdateActivity.class);
-            startActivity(updateIntent);
+        Intent updateIntent = new Intent(this, UpdateActivity.class);
+        startActivity(updateIntent);
     }
 
     //复制mac码
-    public void copyMactoClip(View view){
+    public void copyMactoClip(View view) {
         ClipData clip = ClipData.newPlainText("label", ComFunc.getDeviceId(this));
         ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         clipboardManager.setPrimaryClip(clip);
@@ -226,44 +224,60 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     }
 
     //在线激活
-    private void updateAuthorizeStatus(String result){
+    private void updateAuthorizeStatus(String result) {
         TextView txtActivateMsg = (TextView) findViewById(R.id.txtActivateMsg);
-        try{
+        try {
             JSONObject obj = new JSONObject(result);
             boolean bCanUse = obj.getBoolean("canuse");
+            String verType = obj.getString("verType");
             String status = obj.getString("status");
-            if(bCanUse){
-                txtActivateMsg.setText(status + " left "+ obj.getString("leftusehours") +" h");
+
+            if (bCanUse) {
+                txtActivateMsg.setText(status + " left " + obj.getString("leftusehours") + " h");
+            } else {
+                txtActivateMsg.setText(status + " expired " + obj.getString("msg"));
             }
-            else{
-                txtActivateMsg.setText(status + " expired " + obj.getString("msg") );
-            }
+
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean("canUse",bCanUse);
+            editor.putString("verType", verType);
+            if ("automode".equals(verType)) {
+                editor.putBoolean("autoRecept", false);
+                editor.putBoolean("autoQuitGroup", false);
+            }
+            else if("advanced".equals(verType)){
+            }
+            else{
+                editor.putBoolean("autoMode", false);
+                editor.putBoolean("check_box_autoReply", false);
+                editor.putBoolean("autoRecept", false);
+                editor.putBoolean("autoQuitGroup", false);
+            }
+            editor.putBoolean("canUse", bCanUse);
             editor.commit();
-        }
-        catch (Exception e){
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public void activateSoft(View view){
+
+    public void activateSoft(View view) {
         String device_model = Build.MODEL; // 设备型号 。
         String version_release = Build.VERSION.RELEASE; // 设备的系统版本 。
         String phone = "unknownphone";
         try {
-            phone = URLEncoder.encode(device_model+"("+version_release+")","gbk");
+            phone = URLEncoder.encode(device_model + "(" + version_release + ")", "gbk");
         } catch (UnsupportedEncodingException e) {
             phone = "unknownphone";
             e.printStackTrace();
         }
-        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&phone="+phone+"&mac="+ComFunc.getDeviceId(this)+"&rand="+String.valueOf(new java.util.Date().getTime()), new HttpUtils.CallBack() {
+        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&phone=" + phone + "&mac=" + ComFunc.getDeviceId(this) + "&rand=" + String.valueOf(new java.util.Date().getTime()), new HttpUtils.CallBack() {
             @Override
             public void onRequestComplete(String result) {
                 Message msg = mHandler.obtainMessage();
                 msg.what = UPDATE_AUTHORIZE_STATUS_FROMBUTTON;
                 Bundle data = new Bundle();
-                data.putString("result",result);
+                data.putString("result", result);
                 msg.setData(data);
                 mHandler.sendMessage(msg);
             }

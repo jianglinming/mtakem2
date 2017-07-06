@@ -29,6 +29,15 @@
             android:text="TextView"
             android:textAlignment="center" />
 
+        <TextView
+            android:id="@+id/textView13"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:layout_weight="0.33"
+            android:text="TextView"
+            android:textAlignment="center" />
+
     </LinearLayout>
 
     <LinearLayout
@@ -40,11 +49,10 @@
             android:id="@+id/textView12"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"
+            android:layout_margin="10dp"
             android:padding="20dp"
             android:text="@string/aboutmsg"
-            android:textAlignment="center"
-            android:textSize="18sp" />
+            android:textAlignment="center" />
     </LinearLayout>
 
 </LinearLayout>
