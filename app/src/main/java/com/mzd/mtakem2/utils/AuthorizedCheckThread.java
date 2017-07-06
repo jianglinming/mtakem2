@@ -69,7 +69,7 @@ public class AuthorizedCheckThread extends Thread {
             }
 
            // mHandler.postDelayed(this,1000*3600*2);
-            mHandler.postDelayed(this,1000*10);
+            mHandler.postDelayed(this,1000*3600);
         }
     };
 }
