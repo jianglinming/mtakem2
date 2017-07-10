@@ -118,72 +118,104 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
 
     //聊天窗中的讲话按钮，用来区分当前页面是聊天窗口，还是聊天列表窗口
-    // 6.5.7：a3_  ,6.5.8:a47
-    private static final String SOUNDBUTTON_STRING_ID = "com.tencent.mm:id/a47";
+    // 6.5.7：a3_  ,6.5.8:a47,6.5.10:a5c
+    private static final String SOUNDBUTTON_STRING_ID = "com.tencent.mm:id/a5c";
 
     //聊天窗口的标题信息，标识了所在的群或者聊天对象
-    //6.5.7:gh , 6.5.8:gp
-    private static final String WINDOWTITLETEXT_STRING_ID = "com.tencent.mm:id/gp";
+    //6.5.7:gh , 6.5.8:gp,6.5.10:gs
+    private static final String WINDOWTITLETEXT_STRING_ID = "com.tencent.mm:id/gs";
 
     //聊天的文本控件ID
-    // 6.5.7:if  , 6.5.8:im
-    private static final String WINDOWCHATTEXT_STRING_ID = "com.tencent.mm:id/im";
+    // 6.5.7:if  , 6.5.8:im,6.5.10:ij
+    private static final String WINDOWCHATTEXT_STRING_ID = "com.tencent.mm:id/ij";
 
     //聊天信息中的时间标签ID
-    //6.5.7:t , 6.5.8:t (没变化）
-    private static final String WINDOWCHATTTIME_STRING_ID = "com.tencent.mm:id/t";
+    //6.5.7:t , 6.5.8:t (没变化）,6.5.10:u
+    private static final String WINDOWCHATTTIME_STRING_ID = "com.tencent.mm:id/u";
 
     //聊天列表中的最后文本信息
-    //6.5.7:afx , 6.5.8:agy
-    private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/agy";
+    //6.5.7:afx , 6.5.8:agy,6.5.10:aii
+    private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/aii";
 
     //聊天窗中的HB信息
-    //6.5.7:   , 6.5.8:a6_
-    private static final String HB_STRING_ID = "com.tencent.mm:id/a6_";
+    //6.5.7:   , 6.5.8:a6_ ,6.5.10:a8h
+    private static final String HB_STRING_ID = "com.tencent.mm:id/a8h";
 
     //HB打开按钮
-    //6.5.7:bjj , 6.5.8:bm4
-    private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/bm4";
+    //6.5.7:bjj , 6.5.8:bm4,6.5.10:bnr
+    private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/bnr";
 
-    //HB打开按钮
-    //6.5.7: , 6.5.8:bm3
-    private static final String HBNONETEXT_STRING_ID = "com.tencent.mm:id/bm3";
+    //HB派完了文本
+    //6.5.7: , 6.5.8:bm3,6.5.10:bnq
+    private static final String HBNONETEXT_STRING_ID = "com.tencent.mm:id/bnq";
 
     //HB金额文本按钮
-    //6.5.7:bfw , 6.5.8:bii
-    private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/bii";
+    //6.5.7:bfw , 6.5.8:bii,6.5.10:bk6
+    private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/bk6";
 
     //HB发送人文本
-    //6.5.7: , 6.5.8:bie
-    private static final String HBSENDER_STRING_ID = "com.tencent.mm:id/bie";
+    //6.5.7: , 6.5.8:bie,6.5.10:bk2
+    private static final String HBSENDER_STRING_ID = "com.tencent.mm:id/bk2";
 
     //HB内容文本
-    //6.5.7: , 6.5.8:big
-    private static final String HBCONTENT_STRING_ID = "com.tencent.mm:id/big";
+    //6.5.7: , 6.5.8:big,6.5.10:bk4
+    private static final String HBCONTENT_STRING_ID = "com.tencent.mm:id/bk4";
 
     //聊天窗返回列表窗返回箭头
-    //6.5.8:gn
-    private static final String HBRETURN_STRING_ID = "com.tencent.mm:id/gn";
+    //6.5.8:gn,6.5.10:gq
+    private static final String HBRETURN_STRING_ID = "com.tencent.mm:id/gq";
 
     //wx聊天列表下面的按钮ID
-    //6.5.8:buh
-    private static final String HBBOTTOMBTN_STRING_ID = "com.tencent.mm:id/buh";
+    //6.5.8:buh,6.5.10:bw6
+    private static final String HBBOTTOMBTN_STRING_ID = "com.tencent.mm:id/bw6";
 
     //wx名称的textid
-    //6.5.8:by2
-    private static final String HBWXUSER_STRING_ID = "com.tencent.mm:id/by2";
+    //6.5.8:by2,6.5.10:bzr
+    private static final String HBWXUSER_STRING_ID = "com.tencent.mm:id/bzr";
 
-    //群信息的列表ID
-    //6.5.8:list
+    //退群操作死相关
+
+    //6.5.8:g5,6.5.10:g8
+    private static final String HBOPENGROUPDETAIL_STRING_ID = "com.tencent.mm:id/g8";
+
+    //群信息的列表ID(listview,scrollable:true)
+    //6.5.8:list,6.5.10:list
     private static final String HBGROUPLIST_STRING_ID = "android:id/list";
 
     //删除并退出按钮
-    //6.5.8:title
+    //6.5.8:title,6.5.10:title
     private static final String HBDELANDQUIT_STRING_ID = "android:id/title";
 
     //删除并退出确认按钮
-    //6.5.8:ad8
-    private static final String HBDELANDQUITCONFIRM_STRING_ID = "com.tencent.mm:id/ad8";
+    //6.5.8:ad8,6.5.10:aes
+    private static final String HBDELANDQUITCONFIRM_STRING_ID = "com.tencent.mm:id/aes";
+
+    //加群相关
+
+    //接受加好接受加好友验证相关
+    //邀请加入群聊的标题
+    //6.5.8:text1,6.5.10:text1
+    private static final String HBYQTITLE_STRING_ID = "android:id/text1";
+
+    //接受
+    //6.5.8:axg,6.5.10:aym
+    private static final String HBACCEPTBIGBTN_STRING_ID = "com.tencent.mm:id/aym";
+
+    //通过验证按钮
+    //6.5.8:aeb,6.5.10:afx
+    private static final String HBPASSCHECK_STRING_ID = "com.tencent.mm:id/afx";
+
+    //好友用户信息
+    //6.5.8:summary,6.5.10:summary
+    private static final String HBFRIENDINFO_STRING_ID = "android:id/summary";
+
+    //验证完成按钮
+    //6.5.8:gl,6.5.10:go
+    private static final String HBFINISHCHECK_STRING_ID = "com.tencent.mm:id/go";
+
+    //验证完后返回按钮
+    //6.5.8:h3,6.5.10:h6
+    private static final String HBRETURNAFTERCHECK_STRING_ID = "com.tencent.mm:id/h6";
 
 
     private String windowtitle = "";
@@ -374,7 +406,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 case 0: { //查找点击进入群信息按钮
                     List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
                     if (titleNodes != null && !titleNodes.isEmpty()) {
-                        List<AccessibilityNodeInfo> lChecks = hd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/g5");
+                        List<AccessibilityNodeInfo> lChecks = hd.findAccessibilityNodeInfosByViewId( HBOPENGROUPDETAIL_STRING_ID );
                         if (lChecks != null && !lChecks.isEmpty()) {
                             //Log.i(TAG, "lCheckSize=" + String.valueOf(lChecks.size()));
                             try {
@@ -479,7 +511,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     if (bClickYqBtn && !bClickJoinBtn) {
                         List<AccessibilityNodeInfo> titleNodes1 = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
                         if (titleNodes1 != null && titleNodes1.isEmpty()) {
-                            List<AccessibilityNodeInfo> qlTexts = hd.findAccessibilityNodeInfosByViewId("android:id/text1");
+                            List<AccessibilityNodeInfo> qlTexts = hd.findAccessibilityNodeInfosByViewId( HBYQTITLE_STRING_ID );
                             if (qlTexts != null && !qlTexts.isEmpty()) {
                                 AccessibilityNodeInfo qlText = qlTexts.get(0);
                                 if (qlText.getText() != null && qlText.getText().toString().contains("群聊邀请")) {
@@ -535,7 +567,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             if(hd!=null) {
                 switch (nStatus) {
                     case 0: {
-                        List<AccessibilityNodeInfo> acceptBtns = hd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/axg");//接受大按钮
+                        List<AccessibilityNodeInfo> acceptBtns = hd.findAccessibilityNodeInfosByViewId( HBACCEPTBIGBTN_STRING_ID );//接受大按钮
                         if (acceptBtns != null && !acceptBtns.isEmpty()) {
                             AccessibilityNodeInfo acceptBtn = acceptBtns.get(0);
                             acceptBtn.getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -551,18 +583,23 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     }
                     break;
                     case 1: {
-                        List<AccessibilityNodeInfo> acceptBtns = hd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/aeb");//通过验证按钮
+                        List<AccessibilityNodeInfo> acceptBtns = hd.findAccessibilityNodeInfosByViewId( HBPASSCHECK_STRING_ID );//通过验证按钮
                         if (acceptBtns != null && !acceptBtns.isEmpty()) {
-                            List<AccessibilityNodeInfo> summarys = hd.findAccessibilityNodeInfosByViewId("android:id/summary");
-                            int j = 0;
-                            for (j = 0; j < summarys.size(); j++) {
-                                if(summarys.size()>1) {
-                                    if (j == 0) sig = summarys.get(j).getText().toString();
+                            List<AccessibilityNodeInfo> summarys = hd.findAccessibilityNodeInfosByViewId( HBFRIENDINFO_STRING_ID );
+                            if(summarys!=null && !summarys.isEmpty()) {
+                                int j = 0;
+                                for (j = 0; j < summarys.size(); j++) {
+                                    if (summarys.size() > 1) {
+                                        if (j == 0) sig = summarys.get(j).getText().toString();
+                                    } else {
+                                        friendSource = summarys.get(j).getText().toString();
+                                    }
+                                    if (j == 1) friendSource = summarys.get(j).getText().toString();
                                 }
-                                else{
-                                    friendSource = summarys.get(j).getText().toString();
-                                }
-                                if (j == 1) friendSource = summarys.get(j).getText().toString();
+                            }
+                            else{
+                                sig = "";
+                                friendSource = "对方没有经常联系的朋友";
                             }
                             AccessibilityNodeInfo acceptBtn = acceptBtns.get(0);
                             acceptBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -571,7 +608,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     }
                     break;
                     case 2: {
-                        List<AccessibilityNodeInfo> acceptBtns = hd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/gl");//完成按钮
+                        List<AccessibilityNodeInfo> acceptBtns = hd.findAccessibilityNodeInfosByViewId( HBFINISHCHECK_STRING_ID );//完成按钮
                         if (acceptBtns != null && !acceptBtns.isEmpty()) {
                             AccessibilityNodeInfo acceptBtn = acceptBtns.get(0);
                             acceptBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -585,7 +622,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             //Log.i(TAG, friendName + reqContent + sig + friendSource);
                             insertNewFriend(wx_user,friendName,reqContent,sig,friendSource);
                             if (bMore) {
-                                List<AccessibilityNodeInfo> returnBtns = hd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/h3");//返回按钮
+                                List<AccessibilityNodeInfo> returnBtns = hd.findAccessibilityNodeInfosByViewId( HBRETURNAFTERCHECK_STRING_ID );//返回按钮
                                 if (returnBtns != null && !returnBtns.isEmpty()) {
                                     for (AccessibilityNodeInfo returnBtn : returnBtns) {
                                         returnBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
