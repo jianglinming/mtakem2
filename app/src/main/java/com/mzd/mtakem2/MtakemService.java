@@ -89,6 +89,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bAutoReceptGroup = false;
     private String autoReceptParam = "240 350";
     private boolean bAutoQuitGroup = false;
+    private boolean bAutoInvite = false; //自动邀请好友加群
+    private String autoInviteParam = "";  //自动邀请的好友名单，名单用"|"隔开
+    private boolean bAutoHostCmd = false;
+    private String remoteHostName = "";
+
+
+    //宿主指令
+    private String hostCmd = ""; //宿主指令
 
     private String blackGroup = "";
     private java.util.Date blackGroupStTime;
@@ -217,6 +225,23 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     //6.5.8:h3,6.5.10:h6
     private static final String HBRETURNAFTERCHECK_STRING_ID = "com.tencent.mm:id/h6";
 
+    //自动邀请好友加群相关
+    //点击邀请好友的加号
+    private static final String HBYQFRIENDSINGROUPBTN = "com.tencent.mm:id/cgr";
+    //群信息的listview
+    private static final String HBYQFRIENDSCROLLVIEWID = "com.tencent.mm:id/f3";
+    //好友清单中的好友名称
+    private static final String HBYQFRIENDNAMEID = "com.tencent.mm:id/ja";
+    //好友清单顺序字母
+    private static final String HBYQFRIENDLISTWORD = "com.tencent.mm:id/abw";
+    //好友清单顺序后的复选框ID
+    private static final String HBYQFRIENDCHECKBOXID = "com.tencent.mm:id/oo";
+    //确认邀请名单
+    private static final String HBYQFRIENDCONFIRMNAMESID = "com.tencent.mm:id/go";
+    //确认邀请
+    private static final String HBYQFRIENDCONFIRMYQID = "com.tencent.mm:id/aes";
+
+
 
     private String windowtitle = "";
     private String sender = "";
@@ -312,6 +337,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         autoReceptParam = sharedPreferences.getString("autoParam", "240 350");
         bAutoQuitGroup = sharedPreferences.getBoolean("autoQuitGroup", false);
         bCloudChatRec = sharedPreferences.getBoolean("cloudChatRec", false);
+        bAutoInvite = sharedPreferences.getBoolean("autoInvite",false);
+        autoInviteParam = sharedPreferences.getString("autoInviteParam","");
+        bAutoHostCmd = sharedPreferences.getBoolean("autoHostCmd",false);
+        remoteHostName = sharedPreferences.getString("remoteHostName","");
+
     }
 
     @Override
@@ -349,6 +379,20 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         if (key.equals("cloudChatRec")) {
             bCloudChatRec = sharedPreferences.getBoolean("cloudChatRec", false);
         }
+
+        if(key.equals("autoInvite")){
+            bAutoInvite = sharedPreferences.getBoolean("autoInvite",false);
+        }
+        if(key.equals("autoInviteParam")){
+            autoInviteParam = sharedPreferences.getString("autoInviteParam","");
+        }
+
+        if(key.equals("autoHostCmd")){
+            bAutoHostCmd = sharedPreferences.getBoolean("autoHostCmd",false);
+        }
+        if(key.equals("remoteHostName")){
+            remoteHostName = sharedPreferences.getString("remoteHostName","");
+        }
     }
 
 
@@ -370,6 +414,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             if (bCanUse) {
                 if (bAutoMode) {
                     autoDealHb(event);
+                    //yqfriends("心怡|玲玲|萍|晨雨|燕姿");
                 } else {
                     manMode(event);
                 }
@@ -538,9 +583,18 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     if (bClickJoinBtn) {
                         List<AccessibilityNodeInfo> titleNodes1 = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
                         if (titleNodes1 != null && !titleNodes1.isEmpty()) {
-                            Log.i(TAG, "已经成功群");
+                            Log.i(TAG, "已经成功加群");
                             i = 130;
                             back2Home();
+                            //自动生成邀请设定好友名单
+                            if(bAutoHostCmd) {
+                                String groupName = titleNodes1.get(0).getText().toString();
+                                if (groupName.lastIndexOf("(") != -1) {
+                                    groupName = groupName.substring(0, groupName.lastIndexOf("("));
+                                }
+                                hostCmd = "admin 邀请加入 " + groupName + " " + autoInviteParam;
+                                Log.i(TAG, "生成自动邀请指令:" + hostCmd);
+                            }
                         }
                     }
 
@@ -554,6 +608,204 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         Log.i(TAG, "邀请检查完毕");
     }
 
+    /*
+            自动邀请好友加群
+     */
+    private void yqfriends(String friendStr) throws InterruptedException {
+        int i = 0;
+        int nStatus = 0;
+        String friends[] = friendStr.split("\\|");
+        for (i = 0; i < 100; i++) {
+            AccessibilityNodeInfo hd = getRootInActiveWindow();
+            if(hd!=null) {
+                try {
+                    switch (nStatus) {
+                        case 0: { //查找点击进入群信息按钮
+                            List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                            if (titleNodes != null && !titleNodes.isEmpty()) {
+                                List<AccessibilityNodeInfo> lChecks = hd.findAccessibilityNodeInfosByViewId(HBOPENGROUPDETAIL_STRING_ID);
+                                if (lChecks != null && !lChecks.isEmpty()) {
+                                    try {
+                                        AccessibilityNodeInfo lCheck = lChecks.get(lChecks.size() - 1);
+                                        lCheck.getChild(1).getChild(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        nStatus = 1;
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case 1: {
+                            List<AccessibilityNodeInfo> yqNodes = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDSINGROUPBTN);
+                            if (yqNodes != null && !yqNodes.isEmpty()) {
+                                for (AccessibilityNodeInfo yqNode : yqNodes) {
+                                    CharSequence charSequence = yqNode.getContentDescription();
+                                    if (charSequence != null) {
+                                        if (charSequence.toString().contains("添加成员")) {
+                                            nStatus = 3;
+                                            yqNode.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        }
+                                    }
+                                }
+                            }
+
+                            List<AccessibilityNodeInfo> listHds = hd.findAccessibilityNodeInfosByViewId(HBGROUPLIST_STRING_ID);
+                            if (listHds != null && !listHds.isEmpty()) {
+                                for (AccessibilityNodeInfo listHd : listHds) {
+                                    listHd.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                                }
+                            }
+                        }
+                        break;
+
+                        case 3: {
+                            List<AccessibilityNodeInfo> fNames = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
+                            //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
+                            List<AccessibilityNodeInfo> fChecks = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
+                            if (fNames != null && !fNames.isEmpty()) {
+                                for (AccessibilityNodeInfo fName : fNames) {
+                                    AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
+                                    AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
+                                    //Log.i(TAG,fName.getText().toString());
+                                    if (!checkNode.isChecked()) {
+
+                                        for (String friend : friends) {
+                                            if (fName.getText().toString().contains(friend)) {
+                                                clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            List<AccessibilityNodeInfo> fFriendWordNodes = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDLISTWORD);
+                            if (fFriendWordNodes != null && !fFriendWordNodes.isEmpty()) {
+                                for (AccessibilityNodeInfo fFrendWordNode : fFriendWordNodes) {
+                                    if (fFrendWordNode.getText().toString().contains("Z")) {
+                                        List<AccessibilityNodeInfo> fConfirmBtns = hd.findAccessibilityNodeInfosByViewId( HBYQFRIENDCONFIRMNAMESID );
+                                        if(fConfirmBtns!=null && !fConfirmBtns.isEmpty()){
+                                            if(fConfirmBtns.get(0).isEnabled()){
+                                                fConfirmBtns.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                nStatus = 4;
+                                            }
+                                            else{
+                                                back2Home();
+                                                nStatus = 5;
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
+                            List<AccessibilityNodeInfo> listHds = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDSCROLLVIEWID);
+                            if (listHds != null && !listHds.isEmpty()) {
+                                for (AccessibilityNodeInfo listHd : listHds) {
+                                    listHd.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                                }
+                            }
+                        }
+                        break;
+
+                        case 4:{
+                            List<AccessibilityNodeInfo> confirmBtns = hd.findAccessibilityNodeInfosByViewId( HBYQFRIENDCONFIRMYQID );
+                            List<AccessibilityNodeInfo> confirmContents = hd.findAccessibilityNodeInfosByText("群聊邀请确认");
+                            if(confirmBtns!=null && !confirmBtns.isEmpty()){
+                                if(confirmContents!=null && confirmContents.isEmpty()) {
+                                    confirmBtns.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 5;
+                                    i = 200;
+                                    back2Home();
+                                    Log.i(TAG, "完成邀请");
+                                }
+                                else{
+                                    nStatus = 5;
+                                    i = 200;
+                                    back2Home();
+                                    Log.i(TAG,"该邀请需要群主确认，建议人工处理");
+                                }
+                            }
+                            else{
+
+                            }
+
+                        }
+                        break;
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+            Thread.sleep(100);
+        }
+        back2Home();
+        Log.i(TAG, "邀请超时完毕");
+    }
+
+    /*
+        二维码识别加入群
+     */
+    private void qrcodeJoinGroup(String groupName) throws InterruptedException {
+        int i = 0;
+        int nStatus = 0;
+        for(i=0;i<100;i++){
+            AccessibilityNodeInfo hd = getRootInActiveWindow();
+            if(hd!=null){
+                try{
+                    switch (nStatus){
+                        case 0:{
+                            List<AccessibilityNodeInfo> imgNodes = hd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/a8a");
+                            if(imgNodes!=null && !imgNodes.isEmpty()){
+                                imgNodes.get(imgNodes.size()-1).getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                nStatus = 1;
+                            }
+                        }
+                        break;
+                        case 1:{
+                            List<AccessibilityNodeInfo> mogicNodes = hd.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/yf");
+                            if(mogicNodes!=null&&!mogicNodes.isEmpty()){
+                                //mogicNodes.get(0).performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+                                //execShellCmd("input keyevent --longpress 82 "); //menu按键
+                                execShellCmd("input swipe 10 10 11 11 800"); //采用划线的方式模拟屏幕长按
+                                nStatus = 2;
+                            }
+                        }
+                        break;
+                        case 2:{
+                            List<AccessibilityNodeInfo> qrcodeBtns = hd.findAccessibilityNodeInfosByText("识别图中二维码");
+                            if(qrcodeBtns!=null && !qrcodeBtns.isEmpty()){
+                                qrcodeBtns.get(0).getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                nStatus = 3;
+                            }
+                        }
+                        break;
+                        case 3:{
+                            List<AccessibilityNodeInfo> loadedtexts = hd.findAccessibilityNodeInfosByText("内核提供技术支持");
+                            if(loadedtexts!=null && !loadedtexts.isEmpty()){
+                                execShellCmd("input tap " + autoReceptParam);
+                            }
+                        }
+                        break;
+                    }
+
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+            Thread.sleep(100);
+        }
+        back2Home();
+        Log.i(TAG, "识别完毕");
+
+    }
+
+
+
+    /*
+        自动接收加好友申请
+     */
     private void acceptfriendReq() throws InterruptedException {
         int i = 0;
         int nStatus = 0;
@@ -666,6 +918,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     //get group name
                     String group_name = bundle.getString(Notification.EXTRA_TITLE);
                     group_name = group_name != null ? group_name : "";
+
                     //get send person
                     int endIndex = content.indexOf(":");
                     String send_person = "";
@@ -693,8 +946,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             send_person = "新朋友:"+group_name;
                         }
                     }
-
-
 
                     //自动加群处理
                     if (bAutoReceptGroup && content.contains("[链接] 邀请你加入群聊")) {
@@ -754,7 +1005,50 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 e.printStackTrace();
                             }
                             wx_user = getWxUserName();
+                        }else{
+                            //自动邀请加群处理
+                            Log.i(TAG,remoteHostName);
+                            Log.i(TAG,send_person);
+                            Log.i(TAG,group_name);
+                            if(bAutoHostCmd &&  remoteHostName.contains(send_person) && remoteHostName.contains(group_name) ) {
+                                String[] cmds = content.split(" ");
+                                //指令为定长4
+                                if(cmds.length==4 ){
+                                    hostCmd = content;
+                                    Log.i(TAG,"收到宿主指令:"+content);
+                                    Log.i(TAG,"指令名称："+cmds[1]);
+                                }
+                            }
+                            //检查宿主指令
+                            //宿主指令格式:指令名称 群名称 相关参数
+                            if(!"".equals(hostCmd)){
+                                String[] cmds = hostCmd.split(" ");
+                                //第二个参数定义为群名称，所有指令都针对群而设立
+                                if(cmds.length==4 && cmds[2].equals(group_name) ){
+                                    if(cmds[1].equals("邀请加入")){
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        yqfriends(cmds[3]);
+                                        hostCmd = "";
+                                    }
+                                    else if(cmds[1].equals("二维码加群")){
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        qrcodeJoinGroup(cmds[3]);
+                                        hostCmd = "";
+                                    }
+                                }
+                            }
                         }
+
                     }
                 }
             }

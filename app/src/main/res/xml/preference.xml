@@ -49,7 +49,30 @@
 
     <CheckBoxPreference
         android:defaultValue="false"
+        android:key="autoInvite"
+        android:title="自动邀请好友加群" />
+
+    <EditTextPreference
+        android:key="autoInviteParam"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="|"
+        android:title="自动邀请名单（用|隔开)" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
         android:key="autoQuitGroup"
         android:title="自动黑名单退群" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="autoHostCmd"
+        android:title="开启宿主指令" />
+    <EditTextPreference
+        android:key="remoteHostName"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="admin"
+        android:title="远程宿主名称" />
 
 </PreferenceScreen>
