@@ -282,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             phone = "unknownphone";
             e.printStackTrace();
         }
-        HttpUtils.doGetAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&phone=" + phone + "&mac=" + ComFunc.getDeviceId(this) + "&rand=" + String.valueOf(new java.util.Date().getTime()), new HttpUtils.CallBack() {
+        HttpUtils.doGetAsyn(getText(R.string.uribase) + "/httpfun.jsp?action=activatesoft&phone=" + phone + "&mac=" + ComFunc.getDeviceId(this) + "&rand=" + String.valueOf(new java.util.Date().getTime()), new HttpUtils.CallBack() {
             @Override
             public void onRequestComplete(String result) {
                 Message msg = mHandler.obtainMessage();

@@ -11,6 +11,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.mzd.mtakem2.HbHistory;
+import com.mzd.mtakem2.R;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -19,6 +20,8 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Objects;
 import java.util.Vector;
+
+
 
 /**
  * Created by Administrator on 2017/6/7 0007.
@@ -99,7 +102,7 @@ public class HbDataCheckThread extends Thread {
                 //如果数据库有数据就上传
                 if (total != 0) {
                     try {
-                        HttpUtils.doPostAsyn("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" + URLEncoder.encode(obj.toString(), "gbk"), new HttpUtils.CallBack() {
+                        HttpUtils.doPostAsyn(mContext.getText(R.string.uribase) + "/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" + URLEncoder.encode(obj.toString(), "gbk"), new HttpUtils.CallBack() {
                             @Override
                             public void onRequestComplete(String result) {
                                 boolean bUploadSuccessful = false;

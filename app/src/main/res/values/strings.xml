@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">mtakem2</string>
+    <string name="uribase">http://39.108.106.173/Mtakem2Web</string>
     <string name="app_description">mtakem2</string>
     <string name="app_warning">警告:不得用本软件从事赌博和其他非法活动，否则后果自负！</string>
     <string name="app_title">微助手</string>

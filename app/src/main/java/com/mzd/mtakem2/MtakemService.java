@@ -659,6 +659,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     Notification notification = (Notification) event.getParcelableData();
                     String content = notification.tickerText != null ? notification.tickerText.toString() : "";
                     Bundle bundle = notification.extras;
+
+                    //Log.i(TAG, content);
+                    //Log.i(TAG,bundle.toString());
+
                     //get group name
                     String group_name = bundle.getString(Notification.EXTRA_TITLE);
                     group_name = group_name != null ? group_name : "";
@@ -667,6 +671,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     String send_person = "";
                     if (endIndex != -1) {
                         send_person = content.substring(0, endIndex);
+                        //upload msg，个人发送消息和其他加入朋友的消息不记录（个人消息发送人和消息标题相同，而新创建群聊，未命名，首次消息为标题为群成员用顿号分开）
+                        if (bCloudChatRec) {
+                            try {
+                                rdnonhbInfo(group_name, send_person, wx_user, content.length());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
                     } else {
                         //接收添加好友申请,标题为申请人,内容为：请求添加你为朋友
                         if (content.contains(group_name + "请求添加你为朋友")) {
@@ -682,18 +694,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                     }
 
-                    //upload msg
-                    Log.i(TAG, content);
-                    //Log.i(TAG,bundle.toString());
-                    if (bCloudChatRec) {
-                        try {
-                            rdnonhbInfo(group_name, send_person, wx_user, content.length());
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
 
-                    //Log.i(TAG, content.toString());
+
                     //自动加群处理
                     if (bAutoReceptGroup && content.contains("[链接] 邀请你加入群聊")) {
                         PendingIntent pendingIntent = notification.contentIntent;
@@ -716,6 +718,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                         syncQuitFromGroup(group_name);
                     }
+
                     if (bAutoQuitGroup) {
                         java.util.Date d = new java.util.Date();
                         if (d.getTime() > blackGroupStTime.getTime()) {
@@ -733,7 +736,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             notify_detect_tm = Calendar.getInstance().getTimeInMillis();
                             chatlist_detect_tm = 0;
                             detect_tm = 0;
-                            mHander.postDelayed(runnable, 6000);
+                            mHander.postDelayed(runnable, 12000);
                             bAutoClickOpenDetail = false;
                             bAutoClickChatList = false;
                             bAutoClickHbItem = false;
@@ -742,6 +745,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             e.printStackTrace();
                         }
                     } else {
+                        //自动或的微信账户名称
                         if ("".equals(wx_user)) {
                             PendingIntent pendingIntent = notification.contentIntent;
                             try {
@@ -1297,7 +1301,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 HttpURLConnection conn = null;
                 boolean bUploadSuccessful = false;
                 try {
-                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=InsertHbInfo&strHbInfo=" + URLEncoder.encode(obj.toString(), "utf-8"));
+                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=InsertHbInfo&strHbInfo=" + URLEncoder.encode(obj.toString(), "utf-8"));
                     conn = (HttpURLConnection) url
                             .openConnection();
                     //使用GET方法获取
@@ -1351,6 +1355,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         item.put("group_name", group_name);
         item.put("last_send_person", last_send_person);
         item.put("wxUser", wxUser);
+        item.put("mac",mac);
         item.put("len", len);
         item.put("receive_time", df.format(new java.util.Date()));
         array.put(item);
@@ -1364,7 +1369,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 HttpURLConnection conn = null;
                 boolean bUploadSuccessful = false;
                 try {
-                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=inserthistory&strHistory=" + URLEncoder.encode(obj.toString(), "utf-8"));
+                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=inserthistory&strHistory=" + URLEncoder.encode(obj.toString(), "utf-8"));
                     conn = (HttpURLConnection) url
                             .openConnection();
                     //使用GET方法获取
@@ -1408,7 +1413,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 HttpURLConnection conn = null;
                 boolean bUploadSuccessful = false;
                 try {
-                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=updatequitstatus&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&group_name=" + URLEncoder.encode(group_name, "utf-8"));
+                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=updatequitstatus&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&group_name=" + URLEncoder.encode(group_name, "utf-8"));
                     conn = (HttpURLConnection) url
                             .openConnection();
                     //使用GET方法获取
@@ -1444,7 +1449,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 HttpURLConnection conn = null;
                 boolean bUploadSuccessful = false;
                 try {
-                    URL url = new URL("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=insertFriend&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&friendName=" + URLEncoder.encode(friendName, "utf-8")+
+                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=insertFriend&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&friendName=" + URLEncoder.encode(friendName, "utf-8")+
                             "&reqContent="+URLEncoder.encode(reqContent, "utf-8")+"&friendSig="+URLEncoder.encode(friendSig, "utf-8")+"&friendSource="+URLEncoder.encode(friendSource, "utf-8")
                     );
                     conn = (HttpURLConnection) url

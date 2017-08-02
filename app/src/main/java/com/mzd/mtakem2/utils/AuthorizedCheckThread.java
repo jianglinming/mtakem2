@@ -11,6 +11,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.mzd.mtakem2.MainActivity;
+import com.mzd.mtakem2.R;
 
 import org.json.JSONObject;
 
@@ -56,7 +57,7 @@ public class AuthorizedCheckThread extends Thread {
                     phone = "unknownphone";
                     e.printStackTrace();
                 }
-                String result = HttpUtils.doGet("http://39.108.106.173/Mtakem2Web/httpfun.jsp?action=activatesoft&phone="+phone+"&mac="+ComFunc.getDeviceId(mContext)+"&rand="+String.valueOf(new java.util.Date().getTime()));
+                String result = HttpUtils.doGet(mContext.getText(R.string.uribase) + "/httpfun.jsp?action=activatesoft&phone="+phone+"&mac="+ComFunc.getDeviceId(mContext)+"&rand="+String.valueOf(new java.util.Date().getTime()));
                 Message msg = mMainHandler.obtainMessage();
                 msg.what = MainActivity.UPDATE_AUTHORIZE_STATUS;
                 Bundle data = new Bundle();
