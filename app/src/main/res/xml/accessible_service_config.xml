@@ -9,4 +9,5 @@
     android:settingsActivity="com.mzd.mtakem2.SettingsActivity"
     android:accessibilityFlags="flagDefault"
     android:canRetrieveWindowContent="true"
+    android:canRequestEnhancedWebAccessibility = "true"
     />

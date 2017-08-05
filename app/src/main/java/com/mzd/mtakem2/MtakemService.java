@@ -17,6 +17,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Rect;
 import android.os.Build;
@@ -329,7 +330,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
         //动态增加FLAG配置，注意这非常重要，这个将使得能获取窗体的全部完整的节点。
         AccessibilityServiceInfo info = getServiceInfo();
-        info.flags = info.flags | AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS | AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS | AccessibilityServiceInfo.FLAG_REQUEST_ENHANCED_WEB_ACCESSIBILITY;
+        //info.flags = info.flags | AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS | AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS | AccessibilityServiceInfo.FLAG_REQUEST_ENHANCED_WEB_ACCESSIBILITY;
+        info.flags = info.flags | AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS | AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS;
         setServiceInfo(info);
 
         //注册监听配置更新并初始化配置
@@ -545,14 +547,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                             //Log.i(TAG, pNode.toString());
                                             AccessibilityNodeInfo detailNode = nodeInfo.getParent().getChild(1).getChild(0).getChild(0).getChild(0);
-                                            if(detailNode.getText()!=null){
+                                            if (detailNode.getText() != null) {
                                                 gName = detailNode.getText().toString();
                                                 //Log.i(TAG,gName);
                                                 int stPos = gName.indexOf("邀请你加入群聊");
                                                 int edPos = gName.indexOf("，进入可查看详情");
                                                 //Log.i(TAG,"stPos="+String.valueOf(stPos));
                                                 //Log.i(TAG,"edPos="+String.valueOf(edPos));
-                                                gName = gName.substring(stPos+7,edPos);
+                                                gName = gName.substring(stPos + 7, edPos);
                                                 //Log.i(TAG,"str="+gName);
 
                                             }
@@ -622,7 +624,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             Thread.sleep(100);
         }
         //如果邀请成功,那立刻邀请好友如果不是则等待被动邀请。
-        if(bAllSucYq && bAutoHostCmd){
+        if (bAllSucYq && bAutoHostCmd) {
             yqfriends(autoInviteParam);
             hostCmd = "";
         }
@@ -777,7 +779,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 try {
                     switch (nStatus) {
                         case 0: {
-                            List<AccessibilityNodeInfo> imgNodes = hd.findAccessibilityNodeInfosByViewId( HBQRCODEYJPICID );
+                            List<AccessibilityNodeInfo> imgNodes = hd.findAccessibilityNodeInfosByViewId(HBQRCODEYJPICID);
                             if (imgNodes != null && !imgNodes.isEmpty()) {
                                 imgNodes.get(imgNodes.size() - 1).getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                 nStatus = 1;
@@ -785,11 +787,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                         break;
                         case 1: {
-                            List<AccessibilityNodeInfo> mogicNodes = hd.findAccessibilityNodeInfosByViewId( HBQRCODEYJBIGPICID );
+                            List<AccessibilityNodeInfo> mogicNodes = hd.findAccessibilityNodeInfosByViewId(HBQRCODEYJBIGPICID);
                             if (mogicNodes != null && !mogicNodes.isEmpty()) {
                                 //mogicNodes.get(0).performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
                                 //execShellCmd("input keyevent --longpress 82 "); //menu按键
-                                execShellCmd("input swipe 10 10 11 11 1500"); //采用划线的方式模拟屏幕长按
+                                execShellCmd("input swipe 10 10 11 11 2000"); //采用划线的方式模拟屏幕长按
                                 nStatus = 2;
                             }
                         }
@@ -803,16 +805,18 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                         break;
                         case 3: {
-                            List<AccessibilityNodeInfo> loadedtexts = hd.findAccessibilityNodeInfosByText("内核提供技术支持");
-                            if (loadedtexts != null && !loadedtexts.isEmpty()) {
+                            AccessibilityNodeInfo nodeInfo = findNodeByClassName(hd, "com.tencent.smtt.webkit.WebView");
+                            if (nodeInfo != null) {
+                                Log.i(TAG, "找到节点:" + nodeInfo.getClassName().toString());
+                                Thread.sleep(1500);
                                 execShellCmd("input tap " + autoReceptParam);
                                 nStatus = 4;
-                            }
-                            else{
-                                List<AccessibilityNodeInfo> windowTexts = hd.findAccessibilityNodeInfosByViewId( WINDOWTITLETEXT_STRING_ID);
-                                if(windowTexts!=null && !windowTexts.isEmpty()){
-                                    if(!"".equals(windowTexts.get(0).getText())) {
-                                        resultStr = "admin[sp]发消息[sp]"+groupName+"[sp]该群已经加入";
+
+                            } else {
+                                List<AccessibilityNodeInfo> windowTexts = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                                if (windowTexts != null && !windowTexts.isEmpty()) {
+                                    if (!"".equals(windowTexts.get(0).getText())) {
+                                        resultStr = "admin[sp]发消息[sp]" + groupName + "[sp]该群已经加入";
                                         nStatus = 5;
                                         i = 200;
                                         msg = "该群已经加入";
@@ -822,19 +826,21 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                         break;
                         case 4: {
-                            List<AccessibilityNodeInfo> windowTexts = hd.findAccessibilityNodeInfosByViewId( WINDOWTITLETEXT_STRING_ID);
-                            if(windowTexts!=null && !windowTexts.isEmpty()){
-                                if(!"".equals(windowTexts.get(0).getText())) {
-                                    resultStr = "admin[sp]发消息[sp]"+groupName+"[sp]加群成功";
+                            List<AccessibilityNodeInfo> windowTexts = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                            if (windowTexts != null && !windowTexts.isEmpty()) {
+                                if (!"".equals(windowTexts.get(0).getText())) {
+                                    resultStr = "admin[sp]发消息[sp]" + groupName + "[sp]加群成功";
                                     nStatus = 5;
                                     i = 200;
                                     msg = "加群成功";
                                 }
+                            } else {
+                                execShellCmd("input tap " + autoReceptParam);
                             }
                         }
                         break;
 
-                        case 5:{
+                        case 5: {
 
                         }
                         break;
@@ -847,39 +853,85 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             Thread.sleep(100);
         }
 
-        if("".equals(resultStr)){
-            resultStr = "admin[sp]发消息[sp]"+groupName+"[sp]加群超时或群人数满100人";
+        if ("".equals(resultStr)) {
+            resultStr = "admin[sp]发消息[sp]" + groupName + "[sp]加群超时或群人数满100人";
             msg = "加群超时或群人数满100人";
         }
 
         Log.i(TAG, "识别完毕");
         performGlobalAction(GLOBAL_ACTION_BACK);
-        Thread.sleep(500);
-        if(sendMsg(groupName,msg)){
+
+        if (sendMsg(groupName, msg)) {
             resultStr = "";//如果同步发送成功，则取消被动发送设置。
         }
         back2Home();
-        return  resultStr;
+        return resultStr;
 
+    }
+
+    /*
+        查找节点用 BY CLASS NAME
+     */
+    private AccessibilityNodeInfo findNodeByClassName(AccessibilityNodeInfo nd, String className) {
+        AccessibilityNodeInfo nodeInfo1 = null;
+        int i;
+        int count = nd.getChildCount();
+        for (i = 0; i < count; i++) {
+            AccessibilityNodeInfo nodeInfo = nd.getChild(i);
+            if (nodeInfo == null) {
+                continue;
+            }
+            if (className.equals(nodeInfo.getClassName())) {
+                return nodeInfo;
+            }
+            nodeInfo1 = findNodeByClassName(nodeInfo, className);
+            if (nodeInfo1 != null) {
+                return nodeInfo1;
+            }
+        }
+        return null;
+    }
+
+    private boolean cmpGroup(String targetGroup,String inputGroup){
+        boolean bIsTheGroup = true;
+        String groupkeys[] = inputGroup.split(" ");
+        if(groupkeys.length==1){
+            if(targetGroup.equals(inputGroup)){
+                bIsTheGroup = true;
+            }
+            else{
+                bIsTheGroup = false;
+            }
+        }else{
+            for (String groupKey : groupkeys) {
+                if (!targetGroup.contains(groupKey.trim())) {
+                    bIsTheGroup = false;
+                    break;
+                }
+            }
+        }
+        return  bIsTheGroup;
     }
 
     /*
         通用同步群消息发送
      */
-    private boolean sendMsg(String groupName,String msg) throws InterruptedException {
+    private boolean sendMsg(String groupName, String msg) throws InterruptedException {
         boolean bResult = false;
         int i = 0;
         int nStatus = 0;
-        for(i=0;i<30;i++){
+        int nStatusCounter = 0;
+        String lastGroupName = "";
+        for (i = 0; i < 100; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
-            if(hd!=null){
-                try{
-                    switch (nStatus){
-                        case 0:{
-                            List<AccessibilityNodeInfo> winTitles = hd.findAccessibilityNodeInfosByViewId( WINDOWTITLETEXT_STRING_ID);
-                            if(winTitles!=null && !winTitles.isEmpty()){
-                                if(winTitles.get(0).getText().toString().contains(groupName)){
-                                    if(findEditText(hd,msg)){
+            if (hd != null) {
+                try {
+                    switch (nStatus) {
+                        case 0: {
+                            List<AccessibilityNodeInfo> winTitles = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                            if (winTitles != null && !winTitles.isEmpty()) {
+                                if (winTitles.get(0).getText().toString().equals(groupName)) {
+                                    if (findEditText(hd, msg)) {
                                         send();
                                         nStatus = 100;
                                         i = 200; //退出循环的意思
@@ -889,21 +941,27 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             }
 
                             List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
-                            if(listTitles!=null && !listTitles.isEmpty()){
-                                for(AccessibilityNodeInfo listTitle:listTitles){
-                                    if(listTitle.getText().toString().contains(groupName)){
+                            if (listTitles != null && !listTitles.isEmpty()) {
+                                for (AccessibilityNodeInfo listTitle : listTitles) {
+                                    if (listTitle.getText().toString().equals(groupName)) {
                                         listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                         nStatus = 1;
                                     }
                                 }
+
+                                if (nStatus == 0) { //列表中没找到的话
+                                    lastGroupName = listTitles.get(0).getText().toString();
+                                    nStatus = 2; //开始执行向后滚动寻找。
+                                    nStatusCounter = 0;
+                                }
                             }
                         }
                         break;
-                        case 1:{
-                            List<AccessibilityNodeInfo> winTitles = hd.findAccessibilityNodeInfosByViewId( WINDOWTITLETEXT_STRING_ID);
-                            if(winTitles!=null && !winTitles.isEmpty()){
-                                if(winTitles.get(0).getText().toString().contains(groupName)){
-                                    if(findEditText(hd,msg)){
+                        case 1: {
+                            List<AccessibilityNodeInfo> winTitles = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                            if (winTitles != null && !winTitles.isEmpty()) {
+                                if (winTitles.get(0).getText().toString().contains(groupName)) {
+                                    if (findEditText(hd, msg)) {
                                         send();
                                         nStatus = 100;
                                         i = 200; //退出循环的意思
@@ -914,9 +972,74 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                         break;
 
+                        case 2: {
+                            List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
+                            if (listTitles != null && !listTitles.isEmpty()) {
+                                for (AccessibilityNodeInfo listTitle : listTitles) {
+                                    if (listTitle.getText().toString().equals(groupName)) {
+                                        listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        nStatus = 1;
+                                    }
+                                }
+
+                                if (nStatus != 1) {//及还没找到
+                                    if (listTitles.get(0).getText().toString().equals(lastGroupName)) {
+                                        nStatusCounter++;
+                                        if (nStatusCounter > 10) { //超时没找到的话
+                                            lastGroupName = listTitles.get(listTitles.size() - 1).getText().toString();
+                                            nStatus = 3; //向前面寻找
+                                            nStatusCounter = 0;
+                                        }
+                                    }
+
+                                    if (nStatus != 3) {//如果没转换到向前滚得模式的话：
+                                        try {
+                                            lastGroupName = listTitles.get(0).getText().toString();
+                                            listTitles.get(0).getParent().getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
+                                        }catch (Exception e){
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+                        break;
+
+                        case 3: {
+                            List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
+                            if (listTitles != null && !listTitles.isEmpty()) {
+                                for (AccessibilityNodeInfo listTitle : listTitles) {
+                                    if (listTitle.getText().toString().equals(groupName)) {
+                                        listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        nStatus = 1;
+                                    }
+                                }
+                                //没找到
+                                if (nStatus != 1) {
+                                    if (listTitles.get(listTitles.size() - 1).getText().toString().equals(lastGroupName)) {
+                                        nStatusCounter++;
+                                        if (nStatusCounter > 10) { //超时没找到的话
+                                            i = 200;
+                                            nStatus = 5; //向前面寻找
+                                            nStatusCounter = 0;
+                                            Log.i(TAG, "找不到要发送的群");
+                                        }
+                                    }
+
+                                    try {
+                                        lastGroupName = listTitles.get(listTitles.size() - 1).getText().toString();
+                                        listTitles.get(0).getParent().getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                                    }catch (Exception e){
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }
+                        break;
+
                     }
-                }
-                catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -928,34 +1051,32 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         指定窗口发送消息
      */
 
-    private void sendGroupMessage(String msg) throws InterruptedException {
+    private void sendGroupMessage(String groupName, String msg) throws InterruptedException {
         int i = 0;
         int nStatus = 0;
-        for(i=0;i<100;i++){
+        for (i = 0; i < 30; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
             if (hd != null) {
-                try{
-                    switch (nStatus){
-                        case 0:{
-                            if (findEditText(hd, msg)) {
-                                Log.i(TAG, "sendmsg:" + msg);
-                                send();
-                                back2Home();
-                                nStatus = 2;
+                try {
+                    switch (nStatus) {
+                        case 0: {
+                            List<AccessibilityNodeInfo> winTitles = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                            if (winTitles != null && !winTitles.isEmpty()) {
+                                performGlobalAction(GLOBAL_ACTION_BACK);
                                 i = 200;
+                                nStatus = 5;
                             }
                         }
                         break;
                     }
-                }
-                catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
             Thread.sleep(100);
         }
+        sendMsg(groupName, msg);
         back2Home();
-        Log.i(TAG,"");
     }
 
 
@@ -1162,19 +1283,30 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             wx_user = getWxUserName();
                         } else {
                             //自动邀请加群处理
-                            Log.i(TAG, remoteHostName);
-                            Log.i(TAG, send_person);
-                            Log.i(TAG, group_name);
+                            //Log.i(TAG, remoteHostName);
+                            //Log.i(TAG, send_person);
+                            //Log.i(TAG, group_name);
                             if (bAutoHostCmd && remoteHostName.contains(send_person) && remoteHostName.contains(group_name)) {
                                 String[] cmds = content.split("\\[sp\\]");
-                               // Log.i(TAG,content);
-                               // Log.i(TAG,"指令长度:"+String.valueOf(cmds.length));
-                               // Log.i(TAG,"群名称:"+cmds[2]);
+                                // Log.i(TAG,content);
+                                // Log.i(TAG,"指令长度:"+String.valueOf(cmds.length));
+                                // Log.i(TAG,"群名称:"+cmds[2]);
                                 //指令为定长4
                                 if (cmds.length == 4) {
                                     hostCmd = content;
                                     Log.i(TAG, "收到宿主指令:" + content);
                                     Log.i(TAG, "指令名称：" + cmds[1]);
+                                    //立即执行指令
+                                    if (cmds[1].equals("发消息")) {
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        sendGroupMessage(cmds[2],cmds[3]);
+                                        hostCmd = "";
+                                    }
                                 }
                             }
                             //检查宿主指令
@@ -1187,14 +1319,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 //第二个参数定义为群名称，所有指令都针对群而设立
                                 String groupkeys[] = cmds[2].split(" ");
                                 boolean bIsTheGroup = true;
-                                for(String groupKey:groupkeys){
-                                    if(!group_name.contains(groupKey.trim())){
+                                for (String groupKey : groupkeys) {
+                                    if (!group_name.contains(groupKey.trim())) {
                                         bIsTheGroup = false;
                                         //Log.i(TAG,groupKey+"不在群中");
                                         break;
                                     }
                                 }
-                                if (cmds.length == 4 && bIsTheGroup ) {
+                                if (cmds.length == 4 && bIsTheGroup) {
                                     if (cmds[1].equals("邀请加入")) {
                                         PendingIntent pendingIntent = notification.contentIntent;
                                         try {
@@ -1213,15 +1345,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         }
                                         //处理后返回消息
                                         hostCmd = qrcodeJoinGroup(cmds[3]);
-                                    } else if (cmds[1].equals("发消息")) {
-                                        PendingIntent pendingIntent = notification.contentIntent;
-                                        try {
-                                            pendingIntent.send();
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                        sendGroupMessage(cmds[3]);
-                                        hostCmd = "";
                                     }
                                 }
                             }
