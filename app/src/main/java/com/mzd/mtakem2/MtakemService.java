@@ -972,6 +972,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         bResult = true;
                                     }
                                 }
+                                else{
+                                    performGlobalAction(GLOBAL_ACTION_BACK);
+                                    nStatus = 2;
+                                }
                             }
 
                             List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
@@ -1342,7 +1346,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
-                                        sendGroupMessage(cmds[2],cmds[3]);
+                                        sendMsg(cmds[2],cmds[3]);
                                         hostCmd = "";
                                         setEventTypeContentAndStatus(true);
                                     }
