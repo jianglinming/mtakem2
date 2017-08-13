@@ -470,62 +470,68 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         int nStatus = 0;
         for (i = 0; i < 100; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
-
-            switch (nStatus) {
-                case 0: { //查找点击进入群信息按钮
-                    List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
-                    if (titleNodes != null && !titleNodes.isEmpty()) {
-                        List<AccessibilityNodeInfo> lChecks = hd.findAccessibilityNodeInfosByViewId(HBOPENGROUPDETAIL_STRING_ID);
-                        if (lChecks != null && !lChecks.isEmpty()) {
-                            //Log.i(TAG, "lCheckSize=" + String.valueOf(lChecks.size()));
-                            try {
-                                AccessibilityNodeInfo lCheck = lChecks.get(lChecks.size() - 1);
-                                lCheck.getChild(1).getChild(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                nStatus = 1;
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                }
-                break;
-                case 1: {
-                    List<AccessibilityNodeInfo> listHds = hd.findAccessibilityNodeInfosByViewId(HBGROUPLIST_STRING_ID);
-                    if (listHds != null && !listHds.isEmpty()) {
-                        for (AccessibilityNodeInfo listHd : listHds) {
-                            listHd.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
-                        }
-                    }
-                    List<AccessibilityNodeInfo> titleHds = hd.findAccessibilityNodeInfosByViewId(HBDELANDQUIT_STRING_ID);
-                    if (titleHds != null && !titleHds.isEmpty()) {
-                        for (AccessibilityNodeInfo titleHd : titleHds) {
-                            //Log.i(TAG, "i=" + String.valueOf(i));
-                            //if ("删除并退出".equals(titleHd.getText())) {//这个在4.4.4的android系统中不成立，但在android 6.0中成立很奇怪
-                            if (titleHd.getText() != null && titleHd.getText().toString().contains("删除并退出")) {
-                                Log.i(TAG, "找到退出");
-                                if (titleHd.getParent() != null) {
-                                    titleHd.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            if(hd!=null) {
+                try {
+                    switch (nStatus) {
+                        case 0: { //查找点击进入群信息按钮
+                            List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                            if (titleNodes != null && !titleNodes.isEmpty()) {
+                                List<AccessibilityNodeInfo> lChecks = hd.findAccessibilityNodeInfosByViewId(HBOPENGROUPDETAIL_STRING_ID);
+                                if (lChecks != null && !lChecks.isEmpty()) {
+                                    //Log.i(TAG, "lCheckSize=" + String.valueOf(lChecks.size()));
+                                    try {
+                                        AccessibilityNodeInfo lCheck = lChecks.get(lChecks.size() - 1);
+                                        lCheck.getChild(1).getChild(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        nStatus = 1;
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
                                 }
-                                nStatus = 2;
-                                break;
                             }
                         }
-                    }
-                }
-                break;
-                case 2: {
-                    List<AccessibilityNodeInfo> confirmNodes = hd.findAccessibilityNodeInfosByViewId(HBDELANDQUITCONFIRM_STRING_ID);
-                    for (AccessibilityNodeInfo confirmNode : confirmNodes) {
-                        confirmNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                        i = 130;
-                        nStatus = 3;
-                        back2Home();
-                        Log.i(TAG, "退出成功");
-                        updateQuitResult(wx_user, group_name);
-                    }
-                }
-                break;
+                        break;
+                        case 1: {
+                            List<AccessibilityNodeInfo> listHds = hd.findAccessibilityNodeInfosByViewId(HBGROUPLIST_STRING_ID);
+                            if (listHds != null && !listHds.isEmpty()) {
+                                for (AccessibilityNodeInfo listHd : listHds) {
+                                    listHd.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                                }
+                            }
+                            List<AccessibilityNodeInfo> titleHds = hd.findAccessibilityNodeInfosByViewId(HBDELANDQUIT_STRING_ID);
+                            if (titleHds != null && !titleHds.isEmpty()) {
+                                for (AccessibilityNodeInfo titleHd : titleHds) {
+                                    //Log.i(TAG, "i=" + String.valueOf(i));
+                                    //if ("删除并退出".equals(titleHd.getText())) {//这个在4.4.4的android系统中不成立，但在android 6.0中成立很奇怪
+                                    if (titleHd.getText() != null && titleHd.getText().toString().contains("删除并退出")) {
+                                        Log.i(TAG, "找到退出");
+                                        if (titleHd.getParent() != null) {
+                                            titleHd.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        }
+                                        nStatus = 2;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case 2: {
+                            List<AccessibilityNodeInfo> confirmNodes = hd.findAccessibilityNodeInfosByViewId(HBDELANDQUITCONFIRM_STRING_ID);
+                            for (AccessibilityNodeInfo confirmNode : confirmNodes) {
+                                confirmNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                i = 130;
+                                nStatus = 3;
+                                back2Home();
+                                Log.i(TAG, "退出成功");
+                                updateQuitResult(wx_user, group_name);
+                            }
+                        }
+                        break;
 
+                    }
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
             }
             Thread.sleep(100);
         }
