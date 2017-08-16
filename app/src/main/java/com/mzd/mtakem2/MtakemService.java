@@ -1306,8 +1306,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             }
                         }
                     }
-
-                    if (content.contains("[微信红包]")) {
+                    Log.i(TAG,"content length="+String.valueOf(content.length()));
+                    if (content.contains("[微信红包]") && content.length()<100) { //<100过滤一些超长的带[微信红包]的垃圾信息
                         PendingIntent pendingIntent = notification.contentIntent;
                         setEventTypeContentAndStatus(true); //启用content和status监控
                         try {
