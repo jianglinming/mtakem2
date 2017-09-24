@@ -107,6 +107,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bCanUse = true;
 
     Handler mHander = new Handler();
+    Handler haltCheckHandler = new Handler();
 
     private boolean bAutoClickChatList = false;
     private boolean bAutoClickHbItem = false;
@@ -307,6 +308,36 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
     };
 
+    //检查微信是否无响应(20s检查一次)
+    Runnable haltCheckFun = new Runnable() {
+        @Override
+        public void run() {
+            try{
+                AccessibilityNodeInfo hd = getRootInActiveWindow();
+                if(hd!=null) {
+                    List<AccessibilityNodeInfo> haltWaitNds = hd.findAccessibilityNodeInfosByViewId("android:id/button2");
+                    if (haltWaitNds != null && !haltWaitNds.isEmpty()) {
+                       //Log.i(TAG, "发现无响应按钮");
+                        for (AccessibilityNodeInfo haltWaitNd : haltWaitNds) {
+                            Log.i(TAG,haltWaitNd.getText().toString());
+                            if (haltWaitNd.getText().toString().contains("等待")) {
+                                //Log.i(TAG, "发现无响应..");
+                                haltWaitNd.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            }
+                        }
+
+                    }
+                }
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+            //Log.i(TAG,"微信无响应处理..");
+            haltCheckHandler.postDelayed(this,20000);
+        }
+    };
+
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -340,6 +371,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
         blackGroupStTime = new java.util.Date(new java.util.Date().getTime() + 30 * 1000);
         blackSyncKey = new Object();
+
+        //启动微信无响应检查函数
+        haltCheckHandler.postDelayed(haltCheckFun,1000);
 
         //动态增加FLAG配置，注意这非常重要，这个将使得能获取窗体的全部完整的节点。
         AccessibilityServiceInfo info = getServiceInfo();
