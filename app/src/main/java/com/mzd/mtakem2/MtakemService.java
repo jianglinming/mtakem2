@@ -864,7 +864,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         case 2: {
                             List<AccessibilityNodeInfo> qrcodeBtns = hd.findAccessibilityNodeInfosByText("识别图中二维码");
                             if (qrcodeBtns != null && !qrcodeBtns.isEmpty()) {
-                                qrcodeBtns.get(0).getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                qrcodeBtns.get(0).getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                 Thread.sleep(1000);
                                 nStatus = 3;
                             }
