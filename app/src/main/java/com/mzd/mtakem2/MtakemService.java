@@ -312,14 +312,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     Runnable haltCheckFun = new Runnable() {
         @Override
         public void run() {
-            try{
+            try {
                 AccessibilityNodeInfo hd = getRootInActiveWindow();
-                if(hd!=null) {
+                if (hd != null) {
                     List<AccessibilityNodeInfo> haltWaitNds = hd.findAccessibilityNodeInfosByViewId("android:id/button2");
                     if (haltWaitNds != null && !haltWaitNds.isEmpty()) {
-                       //Log.i(TAG, "发现无响应按钮");
+                        //Log.i(TAG, "发现无响应按钮");
                         for (AccessibilityNodeInfo haltWaitNd : haltWaitNds) {
-                            Log.i(TAG,haltWaitNd.getText().toString());
+                            Log.i(TAG, haltWaitNd.getText().toString());
                             if (haltWaitNd.getText().toString().contains("等待")) {
                                 //Log.i(TAG, "发现无响应..");
                                 haltWaitNd.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -328,12 +328,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                     }
                 }
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             //Log.i(TAG,"微信无响应处理..");
-            haltCheckHandler.postDelayed(this,20000);
+            haltCheckHandler.postDelayed(this, 20000);
         }
     };
 
@@ -373,7 +372,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         blackSyncKey = new Object();
 
         //启动微信无响应检查函数
-        haltCheckHandler.postDelayed(haltCheckFun,1000);
+        haltCheckHandler.postDelayed(haltCheckFun, 1000);
 
         //动态增加FLAG配置，注意这非常重要，这个将使得能获取窗体的全部完整的节点。
         AccessibilityServiceInfo info = getServiceInfo();
@@ -508,7 +507,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     }
 
 
-    private void syncQuitFromGroup(String group_name) throws InterruptedException {
+    private void syncQuitFromGroup(String group_name_md5) throws InterruptedException {
         int i = 0;
         int nStatus = 0;
         for (i = 0; i < 100; i++) {
@@ -565,7 +564,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 nStatus = 3;
                                 back2Home();
                                 Log.i(TAG, "退出成功");
-                                updateQuitResult(wx_user, group_name);
+                                updateQuitResult(wx_user, group_name_md5);
                             }
                         }
                         break;
@@ -747,26 +746,54 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         break;
 
                         case 3: {
-                            List<AccessibilityNodeInfo> fNames = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
-                            //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
-                            List<AccessibilityNodeInfo> fChecks = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
-                            if (fNames != null && !fNames.isEmpty()) {
-                                for (AccessibilityNodeInfo fName : fNames) {
-                                    AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
-                                    AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
-                                    //Log.i(TAG,fName.getText().toString());
-                                    if (!checkNode.isChecked()) {
 
-                                        for (String friend : friends) {
-                                            if (fName.getText().toString().contains(friend)) {
-                                                clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                break;
+                            int j = 0;
+                            for (j = 0; j < friends.length; j++) {
+                                String fr = friends[j];
+                                if (findEditText(hd, fr)) {
+                                    //重新填写搜索后，需要时间显示出列表，这里给1s的时间
+                                    int ii = 0;
+                                    for (ii = 0; ii < 100; ii++) {
+                                        try {
+                                            List<AccessibilityNodeInfo> fNames = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
+                                            //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
+                                            List<AccessibilityNodeInfo> fChecks = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
+                                            if (fNames != null && !fNames.isEmpty()) {
+                                                for (AccessibilityNodeInfo fName : fNames) {
+                                                    AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
+                                                    AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
+                                                    int sz = fNames.size();
+                                                    if (!checkNode.isChecked()) {
+                                                        for (String friend : friends) {
+                                                            if (fName.getText().toString().contains(friend)) {
+                                                                clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                ii = 101; //能找到列表，即表示动态加载完毕。
                                             }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
                                         }
+                                        Thread.sleep(10);
                                     }
                                 }
                             }
 
+                            List<AccessibilityNodeInfo> fConfirmBtns = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCONFIRMNAMESID);
+                            if (fConfirmBtns != null && !fConfirmBtns.isEmpty()) {
+                                if (fConfirmBtns.get(0).isEnabled()) {
+                                    fConfirmBtns.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 4;
+                                } else {
+                                    back2Home();
+                                    nStatus = 5;
+                                }
+                            }
+
+                            /*
                             List<AccessibilityNodeInfo> fFriendWordNodes = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDLISTWORD);
                             if (fFriendWordNodes != null && !fFriendWordNodes.isEmpty()) {
                                 for (AccessibilityNodeInfo fFrendWordNode : fFriendWordNodes) {
@@ -791,6 +818,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     listHd.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
                                 }
                             }
+                            */
                         }
                         break;
 
@@ -1329,7 +1357,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     }
 
                     //退群指令检查
-                    if (bAutoQuitGroup && blackGroup.contains("{={" + group_name + "}=}")) {
+                    String group_name_md5 = ComFunc.MD5(group_name);
+                    if (bAutoQuitGroup && blackGroup.contains("{={" + group_name_md5 + "}=}")) {
                         PendingIntent pendingIntent = notification.contentIntent;
                         setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
                         try {
@@ -1337,7 +1366,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        syncQuitFromGroup(group_name);
+                        syncQuitFromGroup(group_name_md5);
                         setEventTypeContentAndStatus(true);
                     }
 
@@ -1350,8 +1379,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             }
                         }
                     }
-                    Log.i(TAG,"content length="+String.valueOf(content.length()));
-                    if (content.contains("[微信红包]") && content.length()<100) { //<100过滤一些超长的带[微信红包]的垃圾信息
+                    //Log.i(TAG,"content length="+String.valueOf(content.length()));
+                    if (content.contains("[微信红包]") && content.length() < 100) { //<100过滤一些超长的带[微信红包]的垃圾信息
                         PendingIntent pendingIntent = notification.contentIntent;
                         setEventTypeContentAndStatus(true); //启用content和status监控
                         try {
@@ -1641,28 +1670,28 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     contextNode.getBoundsInScreen(rect);
                                     contextString = contextString + contextNode.getText().toString() + rect.toString();
                                 }*/
-                               // if (!contextString.equals(last_context_string)) {
-                                    List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
-                                    if (hbNodes != null && !hbNodes.isEmpty()) {
-                                        for (int i = hbNodes.size() - 1; i >= 0; i--) {
-                                            AccessibilityNodeInfo nodeInfo = hbNodes.get(i);
-                                            try {
-                                                AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent().getParent();
-                                                if (pNode.getClassName().toString().contains("LinearLayout")) {
-                                                    pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                    Log.i(TAG, "发现点击红包");
-                                                    detect_tm = Calendar.getInstance().getTimeInMillis();
-                                                    bAutoClickOpenDetail = true;
-                                                    bAutoClickHbItem = true;
-                                                    break;
-                                                }
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
+                                // if (!contextString.equals(last_context_string)) {
+                                List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
+                                if (hbNodes != null && !hbNodes.isEmpty()) {
+                                    for (int i = hbNodes.size() - 1; i >= 0; i--) {
+                                        AccessibilityNodeInfo nodeInfo = hbNodes.get(i);
+                                        try {
+                                            AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent().getParent();
+                                            if (pNode.getClassName().toString().contains("LinearLayout")) {
+                                                pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                Log.i(TAG, "发现点击红包");
+                                                detect_tm = Calendar.getInstance().getTimeInMillis();
+                                                bAutoClickOpenDetail = true;
+                                                bAutoClickHbItem = true;
+                                                break;
                                             }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
                                         }
                                     }
-                                    //last_context_string = contextString;
-                               // }
+                                }
+                                //last_context_string = contextString;
+                                // }
                             }
                         }
                     }
@@ -2043,7 +2072,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         JSONArray array = new JSONArray();
         JSONObject item = new JSONObject();
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
+        String strGroupNameMd5 = "";
+        strGroupNameMd5 = ComFunc.MD5(group_name);
+        Log.i(TAG, group_name);
+        Log.i(TAG, strGroupNameMd5);
         item.put("group_name", group_name);
+        item.put("group_name_md5", strGroupNameMd5);
         item.put("last_send_person", last_send_person);
         item.put("wxUser", wxUser);
         item.put("mac", mac);
@@ -2052,6 +2086,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         array.put(item);
         obj.put("total", 1);
         obj.put("rows", array);
+
 
         //创建后台线程，获取远程版本
         new Thread(new Runnable() {
@@ -2073,7 +2108,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         //Log.i(TAG, URLDecoder.decode(result, "gbk"));
                         JSONObject objResult = new JSONObject(URLDecoder.decode(result, "gbk"));
                         if (objResult.getBoolean("result")) {
-                            Log.i(TAG, "上传成功:" + URLDecoder.decode(result, "gbk"));
+                            //Log.i(TAG, "上传成功:" + URLDecoder.decode(result, "gbk"));
                             synchronized (blackSyncKey) {
                                 if (blackGroup.equals("")) {
                                     blackGroup = objResult.getString("blackGroup");
@@ -2096,7 +2131,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         更新退出结果
      */
 
-    private void updateQuitResult(final String wxUser, final String group_name) {
+    private void updateQuitResult(final String wxUser, final String group_name_md5) {
 //创建后台线程，获取远程版本
         new Thread(new Runnable() {
             @Override
@@ -2104,7 +2139,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 HttpURLConnection conn = null;
                 boolean bUploadSuccessful = false;
                 try {
-                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=updatequitstatus&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&group_name=" + URLEncoder.encode(group_name, "utf-8"));
+                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=updatequitstatus&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&group_name_md5=" + URLEncoder.encode(group_name_md5, "utf-8"));
                     conn = (HttpURLConnection) url
                             .openConnection();
                     //使用GET方法获取
