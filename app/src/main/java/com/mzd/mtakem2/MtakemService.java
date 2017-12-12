@@ -2139,7 +2139,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 HttpURLConnection conn = null;
                 boolean bUploadSuccessful = false;
                 try {
-                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=updatequitstatus&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&group_name_md5=" + URLEncoder.encode(group_name_md5, "utf-8"));
+                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=updatequitstatus&txtMac="+ mac +"&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&group_name_md5=" + URLEncoder.encode(group_name_md5, "utf-8"));
                     conn = (HttpURLConnection) url
                             .openConnection();
                     //使用GET方法获取
