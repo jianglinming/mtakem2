@@ -507,6 +507,92 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     }
 
 
+    /*
+        清空消息
+     */
+    private void clearChatContent() throws InterruptedException {
+        int i = 0;
+        int nStatus = 0;
+        for (i = 0; i < 100; i++) {
+            AccessibilityNodeInfo hd = getRootInActiveWindow();
+            if (hd != null) {
+                try {
+                    switch (nStatus) {
+                        case 0: {//点击到聊天列表页面
+                            List<AccessibilityNodeInfo> goes = hd.findAccessibilityNodeInfosByViewId(HBRETURN_STRING_ID);
+                            if (goes != null && !goes.isEmpty()) {
+                                for (AccessibilityNodeInfo go : goes) {
+                                    go.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 1;
+                                }
+                            }
+                        }
+                        break;
+                        case 1: {//点击“我”
+                            List<AccessibilityNodeInfo> bottomBtns = hd.findAccessibilityNodeInfosByViewId(HBBOTTOMBTN_STRING_ID);
+                            for (AccessibilityNodeInfo bottomBtn : bottomBtns) {
+                                if (bottomBtn.getText() != null && bottomBtn.getText().toString().contains("我")) {
+                                    bottomBtn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 2;
+                                }
+                            }
+                        }
+                        break;
+                        case 2: {
+                            List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("设置");
+                            if (btns != null && !btns.isEmpty()) {
+                                for (AccessibilityNodeInfo btn : btns) {
+                                    btn.getParent().getParent().getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 3;
+                                }
+                            }
+                        }
+                        break;
+                        case 3: {
+                            List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("聊天");
+                            if (btns != null && !btns.isEmpty()) {
+                                for (AccessibilityNodeInfo btn : btns) {
+                                    btn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 4;
+                                }
+                            }
+                        }
+                        break;
+                        case 4: {
+                            List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("清空聊天记录");
+                            if (btns != null && !btns.isEmpty()) {
+                                for (AccessibilityNodeInfo btn : btns) {
+                                    btn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 5;
+                                }
+                            }
+                        }
+                        break;
+                        case 5: {
+                            List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("清空");
+                            if (btns != null && !btns.isEmpty()) {
+                                for (AccessibilityNodeInfo btn : btns) {
+                                    btn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 6;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            Thread.sleep(100);
+        }
+        Log.i(TAG, "清空消息处理完毕");
+        back2Home();
+
+    }
+
+    /*
+        同步退群
+     */
     private void syncQuitFromGroup(String group_name_md5) throws InterruptedException {
         int i = 0;
         int nStatus = 0;
@@ -1042,9 +1128,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 if (cmpGroup(gName, groupName)) {
                                     if (findEditText(hd, msg)) {
                                         send();
-                                        nStatus = 100;
-                                        i = 200; //退出循环的意思
-                                        bResult = true;
+                                        Log.i(TAG,"发消息1");
+                                        nStatus = 4;
+                                       // i = 200; //退出循环的意思
+                                      //  bResult = true;
                                     }
                                 } else {
                                     performGlobalAction(GLOBAL_ACTION_BACK);
@@ -1052,19 +1139,21 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 }
                             }
 
-                            List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
-                            if (listTitles != null && !listTitles.isEmpty()) {
-                                for (AccessibilityNodeInfo listTitle : listTitles) {
-                                    if (cmpGroup(listTitle.getText().toString(), groupName)) {
-                                        listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                        nStatus = 1;
+                            if(nStatus!=4) { //如果最开始没有找到发送消息的对象的话，就检查列标题。
+                                List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
+                                if (listTitles != null && !listTitles.isEmpty()) {
+                                    for (AccessibilityNodeInfo listTitle : listTitles) {
+                                        if (cmpGroup(listTitle.getText().toString(), groupName)) {
+                                            listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                            nStatus = 1;
+                                        }
                                     }
-                                }
 
-                                if (nStatus == 0) { //列表中没找到的话
-                                    lastGroupName = listTitles.get(0).getText().toString();
-                                    nStatus = 2; //开始执行向后滚动寻找。
-                                    nStatusCounter = 0;
+                                    if (nStatus == 0) { //列表中没找到的话
+                                        lastGroupName = listTitles.get(0).getText().toString();
+                                        nStatus = 2; //开始执行向后滚动寻找。
+                                        nStatusCounter = 0;
+                                    }
                                 }
                             }
                         }
@@ -1079,9 +1168,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 if (cmpGroup(gName, groupName)) {
                                     if (findEditText(hd, msg)) {
                                         send();
-                                        nStatus = 100;
-                                        i = 200; //退出循环的意思
-                                        bResult = true;
+                                        nStatus = 4; //发消息后，后退一下
+                                        Log.i(TAG,"发消息2");
                                     }
                                 }
                             }
@@ -1137,7 +1225,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         nStatusCounter++;
                                         if (nStatusCounter > 5) { //超时没找到的话
                                             i = 200;
-                                            nStatus = 5; //向前面寻找
+                                            nStatus = 70; //向前面寻找
                                             nStatusCounter = 0;
                                             Log.i(TAG, "找不到要发送的群");
                                         }
@@ -1149,6 +1237,41 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }
+                                }
+                            }
+                        }
+                        break;
+
+                        case 4:{ //页面后退，防止连续发消息时回到主页后，就无法再发了。（4,5,6状态都是这个目的)
+                            List<AccessibilityNodeInfo> goes = hd.findAccessibilityNodeInfosByViewId(HBRETURN_STRING_ID);
+                            if (goes != null && !goes.isEmpty()) {
+                                for (AccessibilityNodeInfo go : goes) {
+                                    go.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 5;
+                                }
+                            }
+                        }
+                        break;
+
+                        case 5:{
+                            List<AccessibilityNodeInfo> bottomBtns = hd.findAccessibilityNodeInfosByViewId(HBBOTTOMBTN_STRING_ID);
+                            for (AccessibilityNodeInfo bottomBtn : bottomBtns) {
+                                if (bottomBtn.getText() != null && bottomBtn.getText().toString().contains("我")) {
+                                    bottomBtn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 6;
+                                }
+                            }
+                        }
+                        break;
+
+                        case 6:{
+                            List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("设置");
+                            if (btns != null && !btns.isEmpty()) {
+                                for (AccessibilityNodeInfo btn : btns) {
+                                    btn.getParent().getParent().getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    i = 200; //退出循环的意思
+                                    bResult = true;
+                                    nStatus = 7;
                                 }
                             }
                         }
@@ -1427,6 +1550,27 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             e.printStackTrace();
                                         }
                                         sendMsg(cmds[2], cmds[3]);
+
+                                        back2Home();
+                                        hostCmd = "";
+                                        setEventTypeContentAndStatus(true);
+                                    } else if (cmds[1].equals("申请ROOT")) {//申请ROOT
+                                        try {
+                                            Runtime.getRuntime().exec("su");
+                                            Log.i(TAG, "执行申请ROOT");
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        hostCmd = "";
+                                    } else if (cmds[1].equals("清空群消息")) {//清空消息
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        clearChatContent();
                                         hostCmd = "";
                                         setEventTypeContentAndStatus(true);
                                     }
@@ -1767,6 +1911,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
     }
 
+
     private String getWxUserName() throws InterruptedException {
 
         int i = 0;
@@ -1962,10 +2107,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
      */
     private void back2Home() {
         Intent home = new Intent(Intent.ACTION_MAIN);
-
         home.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         home.addCategory(Intent.CATEGORY_HOME);
-
         startActivity(home);
     }
 
@@ -2139,7 +2282,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 HttpURLConnection conn = null;
                 boolean bUploadSuccessful = false;
                 try {
-                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=updatequitstatus&txtMac="+ mac +"&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&group_name_md5=" + URLEncoder.encode(group_name_md5, "utf-8"));
+                    URL url = new URL(getText(R.string.uribase) + "/httpfun.jsp?action=updatequitstatus&txtMac=" + mac + "&wxUser=" + URLEncoder.encode(wxUser, "utf-8") + "&group_name_md5=" + URLEncoder.encode(group_name_md5, "utf-8"));
                     conn = (HttpURLConnection) url
                             .openConnection();
                     //使用GET方法获取
