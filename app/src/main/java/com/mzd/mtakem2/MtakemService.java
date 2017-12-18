@@ -2146,6 +2146,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         item.put("wxUser", wx_user);
         item.put("mtakem2ver", app_ver);
         item.put("group_name", values.getAsString("group_name"));
+        item.put("group_name_md5", ComFunc.MD5(values.getAsString("group_name")));
         item.put("sender", values.getAsString("sender"));
         item.put("content", values.getAsString("content"));
         item.put("hb_amount", values.getAsDouble("hb_amount"));
