@@ -75,4 +75,12 @@
         android:defaultValue="admin"
         android:title="远程宿主名称" />
 
+    <EditTextPreference
+        android:key="nClearMsgNum"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="0"
+        android:numeric="integer"
+        android:title="自动清空值(小于100为禁用）" />
+
 </PreferenceScreen>

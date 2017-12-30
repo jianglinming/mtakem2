@@ -71,7 +71,7 @@ public class HbDataCheckThread extends Thread {
                 try {
                     Cursor c = hb.query();
                     int i = 0;
-                    for (i = 0; i < 10; i++) {
+                    for (i = 0; i < 50; i++) {
                         JSONObject item = new JSONObject();
                         if (c.moveToNext()) {
                             item.put("device", Build.MODEL + "(" + Build.VERSION.RELEASE + ")");
@@ -131,6 +131,7 @@ public class HbDataCheckThread extends Thread {
                             }
                         });
                     } catch (Exception e) {
+                        Log.i(TAG,e.getMessage());
                         e.printStackTrace();
                     }
                 }

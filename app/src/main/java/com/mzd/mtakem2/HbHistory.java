@@ -14,7 +14,7 @@ import android.util.Log;
 public class HbHistory extends SQLiteOpenHelper {
 
     private static final String TAG = "HbHistory";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 3;
     private static final String DATABASE_NAME = "HbHistory.db";
     private final static String TABLE_NAME = "hblist";
 
@@ -31,7 +31,7 @@ public class HbHistory extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE hblist (id INTEGER PRIMARY KEY AUTOINCREMENT,group_name TEXT,sender TEXT, content TEXT," +
+        db.execSQL("CREATE TABLE hblist (id INTEGER PRIMARY KEY AUTOINCREMENT,group_name TEXT,group_name_md5 TEXT,sender TEXT, content TEXT," +
                 " unpacked_time TEXT, notify_consuming INT,chatlist_consuming INT,chatwindow_consuming INT,hb_amount REAL)");
         //db.execSQL("CREATE TABLE nohb (id INTEGER PRIMARY KEY AUTOINCREMENT,group_name TEXT,wxUser TEXT,receive_time TEXT,len INT)");//预留离线保存历史记录
         Log.i(TAG, "创建数据表");
@@ -39,6 +39,9 @@ public class HbHistory extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         Log.i(TAG, "数据库更新");
+        db.execSQL("drop table if exists hblist");
+        db.execSQL("CREATE TABLE hblist (id INTEGER PRIMARY KEY AUTOINCREMENT,group_name TEXT,group_name_md5 TEXT,sender TEXT, content TEXT," +
+                " unpacked_time TEXT, notify_consuming INT,chatlist_consuming INT,chatwindow_consuming INT,hb_amount REAL)");
     }
 
     //插入方法

@@ -95,6 +95,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bAutoHostCmd = false;
     private String remoteHostName = "";
 
+    private int nClearMsgNum = 0;
+    private int nNowMsgCounter = 0;
 
     //宿主指令
     private String hostCmd = ""; //宿主指令
@@ -308,7 +310,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
     };
 
-    //检查微信是否无响应(20s检查一次)
+    //检查微信是否无响应(10s检查一次)
     Runnable haltCheckFun = new Runnable() {
         @Override
         public void run() {
@@ -332,7 +334,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 e.printStackTrace();
             }
             //Log.i(TAG,"微信无响应处理..");
-            haltCheckHandler.postDelayed(this, 20000);
+            haltCheckHandler.postDelayed(this, 10000);
         }
     };
 
@@ -398,6 +400,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         bAutoHostCmd = sharedPreferences.getBoolean("autoHostCmd", false);
         remoteHostName = sharedPreferences.getString("remoteHostName", "");
 
+        try {
+            nClearMsgNum = Integer.parseInt(sharedPreferences.getString("nClearMsgNum", "0"));
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -450,6 +458,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         if (key.equals("remoteHostName")) {
             remoteHostName = sharedPreferences.getString("remoteHostName", "");
         }
+        if (key.equals("nClearMsgNum")) {
+            nClearMsgNum = Integer.parseInt(sharedPreferences.getString("nClearMsgNum", "0"));
+        }
+
     }
 
 
@@ -839,7 +851,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 if (findEditText(hd, fr)) {
                                     //重新填写搜索后，需要时间显示出列表，这里给1s的时间
                                     int ii = 0;
-                                    for (ii = 0; ii < 100; ii++) {
+                                    for (ii = 0; ii < 5; ii++) {
                                         try {
                                             List<AccessibilityNodeInfo> fNames = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
                                             //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
@@ -863,7 +875,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
-                                        Thread.sleep(10);
+                                        Thread.sleep(100);
                                     }
                                 }
                             }
@@ -1436,6 +1448,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     //get group name
                     String group_name = bundle.getString(Notification.EXTRA_TITLE);
                     group_name = group_name != null ? group_name : "";
+                    nNowMsgCounter ++; //收到一个通知，计数器加一
                     //get send person
                     int endIndex = content.indexOf(":");
                     String send_person = "";
@@ -1532,6 +1545,22 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             wx_user = getWxUserName();
                             setEventTypeContentAndStatus(true);
                         } else {
+                            //自动清空群消息处理
+                            Log.i(TAG,"nNowMsgCounter:"+String.valueOf(nNowMsgCounter)+",nClearMsgNum:"+String.valueOf(nClearMsgNum));
+                            if(nClearMsgNum>100 && nNowMsgCounter>nClearMsgNum){
+                                nNowMsgCounter = 0;
+                                PendingIntent pendingIntent = notification.contentIntent;
+                                setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
+                                try {
+                                    pendingIntent.send();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                clearChatContent();
+                                hostCmd = "";
+                                setEventTypeContentAndStatus(true);
+                            }
+
                             //自动邀请加群处理
                             if (bAutoHostCmd && remoteHostName.contains(send_person) && remoteHostName.contains(group_name)) {
                                 String[] cmds = content.split("\\[sp\\]");
@@ -1550,7 +1579,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             e.printStackTrace();
                                         }
                                         sendMsg(cmds[2], cmds[3]);
-
                                         back2Home();
                                         hostCmd = "";
                                         setEventTypeContentAndStatus(true);
@@ -1563,6 +1591,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         }
                                         hostCmd = "";
                                     } else if (cmds[1].equals("清空群消息")) {//清空消息
+                                        nNowMsgCounter = 0; //群消息计数清零
                                         PendingIntent pendingIntent = notification.contentIntent;
                                         setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
                                         try {
@@ -1573,7 +1602,52 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         clearChatContent();
                                         hostCmd = "";
                                         setEventTypeContentAndStatus(true);
+                                    }else if (cmds[1].equals("后台参数设置")) {//清空消息
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        String dealResult = "";
+                                        try{
+                                            if(sharedPreferences.contains(cmds[2]))
+                                            {
+                                                SharedPreferences.Editor editor = sharedPreferences.edit();
+                                                editor.putString(cmds[2],cmds[3]);
+                                                editor.commit();
+                                                dealResult = "成功";
+                                            }
+                                            else{
+                                                dealResult = "失败(没这个参数项)";
+                                            }
+                                        }
+                                        catch (Exception e){
+                                            dealResult = "失败(设置异常)";
+                                            e.printStackTrace();
+                                        }
+                                        sendMsg(group_name, cmds[2]+"设置为"+cmds[3]+dealResult);
+                                        back2Home();
+                                        hostCmd = "";
+                                        setEventTypeContentAndStatus(true);
+                                    }else if (cmds[1].equals("帮助")) {//清空消息
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        String helpMsg = "[sp]发消息[sp]要发的群[sp]要发的内容\n[sp]后台参数设置[sp]nClearMsgNum[sp]101\n[sp]清空群消息[sp]随意填[sp]随意\n[sp]申请ROOT[sp]随意填[sp]随意\n" +
+                                         "[sp]邀请加入[sp]要邀请的群[sp]邀请谁加入？\n[sp]二维码加群[sp]填一个群并给这个群发二维码[sp]随意";
+                                        sendMsg(group_name,helpMsg);
+                                        back2Home();
+                                        hostCmd = "";
+                                        setEventTypeContentAndStatus(true);
+
                                     }
+
                                 }
                             }
                             //检查宿主指令
@@ -2096,7 +2170,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         List<ActivityManager.RunningTaskInfo> runningTaskInfos = activtyManager.getRunningTasks(3);
         for (ActivityManager.RunningTaskInfo runningTaskInfo : runningTaskInfos) {
             if (this.getPackageName().equals(runningTaskInfo.topActivity.getPackageName())) {
-                activtyManager.moveTaskToFront(runningTaskInfo.id, ActivityManager.MOVE_TASK_WITH_HOME);
+                //activtyManager.moveTaskToFront(runningTaskInfo.id, ActivityManager.MOVE_TASK_WITH_HOME);
                 return;
             }
         }
@@ -2129,9 +2203,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             group_name = group_name.substring(0, group_name.lastIndexOf("("));
         }
         values.put("group_name", group_name);
+        values.put("group_name_md5",ComFunc.MD5(group_name));
         values.put("sender", sender);
         values.put("content", hbcontent);
-        values.put("hb_amount", hb_amount);
+        values.put("hb_amount", hb_amount.equals("")?"0":hb_amount);
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
         values.put("unpacked_time", df.format(new java.util.Date()));
         values.put("notify_consuming", notify_detect_tm != 0 ? Calendar.getInstance().getTimeInMillis() - notify_detect_tm : 0);
@@ -2146,7 +2221,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         item.put("wxUser", wx_user);
         item.put("mtakem2ver", app_ver);
         item.put("group_name", values.getAsString("group_name"));
-        item.put("group_name_md5", ComFunc.MD5(values.getAsString("group_name")));
+        item.put("group_name_md5", values.getAsString("group_name_md5"));
         item.put("sender", values.getAsString("sender"));
         item.put("content", values.getAsString("content"));
         item.put("hb_amount", values.getAsDouble("hb_amount"));
