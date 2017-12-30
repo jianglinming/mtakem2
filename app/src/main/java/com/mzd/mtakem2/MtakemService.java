@@ -848,35 +848,40 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             int j = 0;
                             for (j = 0; j < friends.length; j++) {
                                 String fr = friends[j];
-                                if (findEditText(hd, fr)) {
-                                    //重新填写搜索后，需要时间显示出列表，这里给1s的时间
-                                    int ii = 0;
-                                    for (ii = 0; ii < 5; ii++) {
-                                        try {
-                                            List<AccessibilityNodeInfo> fNames = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
-                                            //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
-                                            List<AccessibilityNodeInfo> fChecks = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
-                                            if (fNames != null && !fNames.isEmpty()) {
-                                                for (AccessibilityNodeInfo fName : fNames) {
-                                                    AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
-                                                    AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
-                                                    int sz = fNames.size();
-                                                    if (!checkNode.isChecked()) {
-                                                        for (String friend : friends) {
-                                                            if (fName.getText().toString().contains(friend)) {
-                                                                clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                                break;
+                                try {
+                                    if (findEditText(hd, fr)) {
+                                        //重新填写搜索后，需要时间显示出列表，这里给1s的时间
+                                        int ii = 0;
+                                        for (ii = 0; ii < 5; ii++) {
+                                            try {
+                                                List<AccessibilityNodeInfo> fNames = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
+                                                //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
+                                                List<AccessibilityNodeInfo> fChecks = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
+                                                if (fNames != null && !fNames.isEmpty()) {
+                                                    for (AccessibilityNodeInfo fName : fNames) {
+                                                        AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
+                                                        AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
+                                                        int sz = fNames.size();
+                                                        if (!checkNode.isChecked()) {
+                                                            for (String friend : friends) {
+                                                                if (fName.getText().toString().contains(friend)) {
+                                                                    clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                                    break;
+                                                                }
                                                             }
                                                         }
                                                     }
+                                                    ii = 101; //能找到列表，即表示动态加载完毕。
                                                 }
-                                                ii = 101; //能找到列表，即表示动态加载完毕。
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
                                             }
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
+                                            Thread.sleep(100);
                                         }
-                                        Thread.sleep(100);
                                     }
+                                }
+                                catch (Exception e){
+                                    e.printStackTrace();
                                 }
                             }
 
@@ -1639,13 +1644,30 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
-                                        String helpMsg = "[sp]发消息[sp]要发的群[sp]要发的内容\n[sp]后台参数设置[sp]nClearMsgNum[sp]101\n[sp]清空群消息[sp]随意填[sp]随意\n[sp]申请ROOT[sp]随意填[sp]随意\n" +
-                                         "[sp]邀请加入[sp]要邀请的群[sp]邀请谁加入？\n[sp]二维码加群[sp]填一个群并给这个群发二维码[sp]随意";
+                                        String helpMsg = "[sp]发消息[sp]要发的群[sp]要发的内容\n" +
+                                                "[sp]后台参数设置[sp]nClearMsgNum[sp]101\n[sp]后台参数设置[sp]autoInviteParam[sp]jzgz01|jzgz02|jzgz03\n[sp]后台参数设置[sp]autoInviteParam[sp]jzgz01|jzgz02|jzgz03\n" +
+                                                "[sp]后台参数设置[sp]remoteHostName[sp]你的微信名 微信群名\n" +
+                                                "[sp]清空群消息[sp]随意填[sp]随意\n[sp]申请ROOT[sp]随意填[sp]随意\n" +
+                                         "[sp]邀请加入[sp]要邀请的群[sp]邀请谁加入？\n" +
+                                                "[sp]二维码加群[sp]填一个群并给这个群发二维码[sp]随意\n" +
+                                                "[sp]获取余额[sp]要反馈的群名称[sp]随意\n";
                                         sendMsg(group_name,helpMsg);
                                         back2Home();
                                         hostCmd = "";
                                         setEventTypeContentAndStatus(true);
 
+                                    }else if (cmds[1].equals("获取余额")) {//清空消息
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        sendMsg(cmds[2],wx_user+":"+getAndSendWxAmount());
+                                        back2Home();
+                                        hostCmd = "";
+                                        setEventTypeContentAndStatus(true);
                                     }
 
                                 }
@@ -1985,7 +2007,118 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
     }
 
+    /*
+        获得微信钱包金额
+     */
 
+    private String getAndSendWxAmount() throws InterruptedException {
+
+        String result = "未获取到";
+        int i = 0;
+        int nStatus = 0;
+        for (i = 0; i < 100; i++) {
+            AccessibilityNodeInfo hd = getRootInActiveWindow();
+            if (hd != null) {
+                try {
+                    switch (nStatus) {
+                        case 0: {//点击到聊天列表页面
+                            List<AccessibilityNodeInfo> goes = hd.findAccessibilityNodeInfosByViewId(HBRETURN_STRING_ID);
+                            if (goes != null && !goes.isEmpty()) {
+                                for (AccessibilityNodeInfo go : goes) {
+                                    go.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 1;
+                                }
+                            }
+                        }
+                        break;
+                        case 1: {//点击“我”
+                            List<AccessibilityNodeInfo> bottomBtns = hd.findAccessibilityNodeInfosByViewId(HBBOTTOMBTN_STRING_ID);
+                            for (AccessibilityNodeInfo bottomBtn : bottomBtns) {
+                                if (bottomBtn.getText() != null && bottomBtn.getText().toString().contains("我")) {
+                                    bottomBtn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 2;
+                                }
+                            }
+                        }
+                        break;
+                        case 2: {
+                            List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("钱包");
+                            if (btns != null && !btns.isEmpty()) {
+                                for (AccessibilityNodeInfo btn : btns) {
+                                    btn.getParent().getParent().getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 3;
+                                }
+                            }
+                        }
+                        break;
+                        case 3: {
+                            List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("零钱");
+                            if (btns != null && !btns.isEmpty()) {
+                                for (AccessibilityNodeInfo btn : btns) {
+                                    try {
+                                        result = btn.getParent().getChild(2).getText().toString();
+                                    }
+                                    catch (Exception e){
+                                        Log.i(TAG,e.getMessage());
+                                        result = "获取异常";
+                                    }
+                                    Log.i(TAG,result);
+                                    performGlobalAction(GLOBAL_ACTION_BACK);
+                                    nStatus = 4;
+                                }
+                            }
+                        }
+                        break;
+                        case 4:{
+                            List<AccessibilityNodeInfo> bottomBtns = hd.findAccessibilityNodeInfosByViewId(HBBOTTOMBTN_STRING_ID);
+                            for (AccessibilityNodeInfo bottomBtn : bottomBtns) {
+                                if (bottomBtn.getText() != null && bottomBtn.getText().toString().contains("微信")) {
+                                    bottomBtn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 5;
+                                }
+                            }
+                        }
+                        break;
+                        case 5:{
+                            List<AccessibilityNodeInfo> nodeInfos1 = hd.findAccessibilityNodeInfosByViewId(CHATLISTTEXT_STRING_ID);
+                            //找到了有消息条目，说明就进入了窗口了
+                            if (nodeInfos1 != null && !nodeInfos1.isEmpty()) {
+                                for(AccessibilityNodeInfo nodeInfo:nodeInfos1){
+                                    try {
+                                        AccessibilityNodeInfo clickableParentNode = nodeInfo.getParent().getParent().getParent().getParent();
+                                        clickableParentNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        nStatus = 6;
+                                        break;
+                                    }
+                                    catch (Exception e){
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case 6:{
+                            List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                            if(titleNodes!=null && !titleNodes.isEmpty()){
+                                nStatus = 7;
+                                i = 200;
+                            }
+                        }
+                        break;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            Thread.sleep(100);
+        }
+        Log.i(TAG, "获取操作完成");
+        return  result;
+    }
+
+    /*
+        获得微信名称
+     */
     private String getWxUserName() throws InterruptedException {
 
         int i = 0;
