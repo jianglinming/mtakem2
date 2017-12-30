@@ -1644,7 +1644,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
-                                        String helpMsg = "[sp]发消息[sp]要发的群[sp]要发的内容\n" +
+                                        String helpMsg = "mtakem2版本:"+app_ver+"\n"+"[sp]发消息[sp]要发的群[sp]要发的内容\n" +
                                                 "[sp]后台参数设置[sp]nClearMsgNum[sp]101\n[sp]后台参数设置[sp]autoInviteParam[sp]jzgz01|jzgz02|jzgz03\n[sp]后台参数设置[sp]autoInviteParam[sp]jzgz01|jzgz02|jzgz03\n" +
                                                 "[sp]后台参数设置[sp]remoteHostName[sp]你的微信名 微信群名\n" +
                                                 "[sp]清空群消息[sp]随意填[sp]随意\n[sp]申请ROOT[sp]随意填[sp]随意\n" +
