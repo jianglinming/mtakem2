@@ -806,8 +806,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         int i = 0;
         int nStatus = 0;
         String friends[] = friendStr.split("\\|");
-        int frindex = 0;
-        ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         for (i = 0; i < 100; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
             if (hd != null) {
@@ -854,94 +852,38 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         break;
 
                         case 3: {
-                                String fr = friends[frindex];;
-                                try {
-                                        boolean bInputSuc  = false;
-                                        long atime = Calendar.getInstance().getTimeInMillis();
-                                        List<AccessibilityNodeInfo> nodeSearchBoxs = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDSEARCHEDITBOX);
-                                        if(nodeSearchBoxs!=null && !nodeSearchBoxs.isEmpty()){
-                                            for(AccessibilityNodeInfo nodeSearchBox:nodeSearchBoxs){
-                                                Bundle arguments = new Bundle();
-                                                arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT,
-                                                        AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD);
-                                                arguments.putBoolean(AccessibilityNodeInfo.ACTION_ARGUMENT_EXTEND_SELECTION_BOOLEAN,
-                                                        true);
-                                                nodeSearchBox.performAction(AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY,
-                                                        arguments);
-                                                nodeSearchBox.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
-                                                Log.i(TAG,"focus耗时："+String.valueOf(Calendar.getInstance().getTimeInMillis()-atime));
-                                                ClipData clip = ClipData.newPlainText("label", fr);
-                                                clipboardManager.setPrimaryClip(clip);
-                                                nodeSearchBox.performAction(AccessibilityNodeInfo.ACTION_PASTE);
-                                                Log.i(TAG,"执行paste耗时："+String.valueOf(Calendar.getInstance().getTimeInMillis()-atime));
-                                                bInputSuc = true;
+                            List<AccessibilityNodeInfo> fNames = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
+                            //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
+                            List<AccessibilityNodeInfo> fChecks = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
+                            if (fNames != null && !fNames.isEmpty()) {
+                                for (AccessibilityNodeInfo fName : fNames) {
+                                    AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
+                                    AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
+                                    //Log.i(TAG,fName.getText().toString());
+                                    if (!checkNode.isChecked()) {
+                                        for (String friend : friends) {
+                                            if (fName.getText().toString().contains(friend)) {
+                                                clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                                 break;
                                             }
                                         }
-                                        Log.i(TAG,"粘贴消息耗时："+String.valueOf(Calendar.getInstance().getTimeInMillis()-atime));
-
-                                        //重新填写搜索后，需要时间显示出列表，这里给1s的时间
-                                        if(bInputSuc) {
-                                            int ii = 0;
-                                            for (ii = 0; ii < 5; ii++) {
-                                                try {
-                                                    List<AccessibilityNodeInfo> fNames = getRootInActiveWindow().findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
-                                                    //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
-                                                    List<AccessibilityNodeInfo> fChecks = getRootInActiveWindow().findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
-                                                    if (fNames != null && !fNames.isEmpty()) {
-                                                        for (AccessibilityNodeInfo fName : fNames) {
-                                                            AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
-                                                            AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
-                                                            int sz = fNames.size();
-                                                            if (!checkNode.isChecked()) {
-                                                                for (String friend : friends) {
-                                                                    if (fName.getText().toString().contains(friend)) {
-                                                                        clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                                        break;
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                        ii = 101; //能找到列表，即表示动态加载完毕。
-                                                    }
-                                                } catch (Exception e) {
-                                                    e.printStackTrace();
-                                                }
-                                                Thread.sleep(100);
-                                            }
-                                        }
-
-                                    Log.i(TAG,"搜索耗时消息耗时："+String.valueOf(Calendar.getInstance().getTimeInMillis()-atime));
-
-                                        //如果输入了的话，不管又不有搜索到都过了。
-                                        if(bInputSuc){
-                                            frindex++;
-                                        }
-
-                                }
-                                catch (Exception e){
-                                    e.printStackTrace();
-                                }
-
-                            if(frindex>=friends.length) {
-                                List<AccessibilityNodeInfo> fConfirmBtns = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCONFIRMNAMESID);
-                                if (fConfirmBtns != null && !fConfirmBtns.isEmpty()) {
-                                    if (fConfirmBtns.get(0).isEnabled()) {
-                                        fConfirmBtns.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                        nStatus = 4;
-                                    } else {
-                                        back2Home();
-                                        i = 200;
-                                        nStatus = 5;
                                     }
-                                }
-                                else{
-                                    back2Home();
-                                    i = 200;
-                                    nStatus = 5;
                                 }
                             }
 
+                            List<AccessibilityNodeInfo> fConfirmBtns = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCONFIRMNAMESID);
+                            if (fConfirmBtns != null && !fConfirmBtns.isEmpty()) {
+                                if (fConfirmBtns.get(0).isEnabled()) {
+                                    fConfirmBtns.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    nStatus = 4;
+                                } else {
+                                    back2Home();
+                                    nStatus = 5;
+                                    i = 200;
+                                }
+                            }
+
+                            //由于性能问题，暂时不采用可以向后翻页查询选择的方式，直接采用好友微信备注为AAAA的形式将好友置到前面即可。
                             /*
                             List<AccessibilityNodeInfo> fFriendWordNodes = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDLISTWORD);
                             if (fFriendWordNodes != null && !fFriendWordNodes.isEmpty()) {
@@ -966,8 +908,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 for (AccessibilityNodeInfo listHd : listHds) {
                                     listHd.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
                                 }
-                            }
-                            */
+                            }*/
                         }
                         break;
 
