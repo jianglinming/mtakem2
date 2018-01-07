@@ -83,4 +83,9 @@
         android:numeric="integer"
         android:title="自动清空值(小于100为禁用）" />
 
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="autoInviteAgain"
+        android:title="自动二次邀请加群" />
+
 </PreferenceScreen>
