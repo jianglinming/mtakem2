@@ -111,7 +111,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private Object inviteAgainSyncKey;
 
 
-
     private long autoReplyDelay = 1000;
     private boolean bCanUse = true;
 
@@ -432,7 +431,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         autoInviteParam = sharedPreferences.getString("autoInviteParam", "");
         bAutoHostCmd = sharedPreferences.getBoolean("autoHostCmd", false);
         remoteHostName = sharedPreferences.getString("remoteHostName", "");
-        bInviteAgain = sharedPreferences.getBoolean("autoInviteAgain",false);
+        bInviteAgain = sharedPreferences.getBoolean("autoInviteAgain", false);
 
         try {
             nClearMsgNum = Integer.parseInt(sharedPreferences.getString("nClearMsgNum", "0"));
@@ -494,8 +493,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         if (key.equals("nClearMsgNum")) {
             nClearMsgNum = Integer.parseInt(sharedPreferences.getString("nClearMsgNum", "0"));
         }
-        if(key.equals("autoInviteAgain")){
-            bInviteAgain = sharedPreferences.getBoolean("autoInviteAgain",false);
+        if (key.equals("autoInviteAgain")) {
+            bInviteAgain = sharedPreferences.getBoolean("autoInviteAgain", false);
         }
 
     }
@@ -515,7 +514,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
     private void setEventTypeContentAndStatus(boolean bEnable) {
         AccessibilityServiceInfo info = getServiceInfo();
-        if(info!=null) {
+        if (info != null) {
             if (bEnable) {
                 info.eventTypes = AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED | AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED | AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
             } else {
@@ -658,10 +657,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 if (lChecks != null && !lChecks.isEmpty()) {
                                     //Log.i(TAG, "lCheckSize=" + String.valueOf(lChecks.size()));
                                     try {
-                                        for(AccessibilityNodeInfo lCheck:lChecks){
+                                        for (AccessibilityNodeInfo lCheck : lChecks) {
                                             // AccessibilityNodeInfo lCheck = lChecks.get(lChecks.size() - 1);
                                             // Log.i(TAG,lCheck.getChild(1).getChild(0).getClassName().toString());
-                                            if(lCheck.getChild(1).getChild(0).isClickable()) {
+                                            if (lCheck.getChild(1).getChild(0).isClickable()) {
                                                 lCheck.getChild(1).getChild(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                                 nStatus = 1;
                                             }
@@ -842,6 +841,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private void yqfriends(String friendStr) throws InterruptedException {
         int i = 0;
         int nStatus = 0;
+        boolean bSelectionClicked = false;
         String friends[] = friendStr.split("\\|");
         for (i = 0; i < 100; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
@@ -855,10 +855,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 List<AccessibilityNodeInfo> lChecks = hd.findAccessibilityNodeInfosByViewId(HBOPENGROUPDETAIL_STRING_ID);
                                 if (lChecks != null && !lChecks.isEmpty()) {
                                     try {
-                                        for(AccessibilityNodeInfo lCheck:lChecks){
-                                           // AccessibilityNodeInfo lCheck = lChecks.get(lChecks.size() - 1);
-                                            Log.i(TAG,lCheck.getChild(1).getChild(0).getClassName().toString());
-                                            if(lCheck.getChild(1).getChild(0).isClickable()) {
+                                        for (AccessibilityNodeInfo lCheck : lChecks) {
+                                            // AccessibilityNodeInfo lCheck = lChecks.get(lChecks.size() - 1);
+                                            Log.i(TAG, lCheck.getChild(1).getChild(0).getClassName().toString());
+                                            if (lCheck.getChild(1).getChild(0).isClickable()) {
                                                 lCheck.getChild(1).getChild(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                                 nStatus = 1;
                                             }
@@ -879,6 +879,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     if (charSequence != null) {
                                         if (charSequence.toString().contains("添加成员")) {
                                             nStatus = 3;
+                                            bSelectionClicked = false;
                                             yqNode.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                         }
                                     }
@@ -895,34 +896,48 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         break;
 
                         case 3: {
-                            List<AccessibilityNodeInfo> fNames = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
-                            //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
-                            List<AccessibilityNodeInfo> fChecks = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
-                            if (fNames != null && !fNames.isEmpty()) {
-                                for (AccessibilityNodeInfo fName : fNames) {
-                                    AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
-                                    AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
-                                    //Log.i(TAG,fName.getText().toString());
-                                    if (!checkNode.isChecked()) {
-                                        for (String friend : friends) {
-                                            if (fName.getText().toString().contains(friend)) {
-                                                clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                break;
+                            if(!bSelectionClicked) {
+                                List<AccessibilityNodeInfo> fNames = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
+                                //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
+                                List<AccessibilityNodeInfo> fChecks = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
+                                boolean bHasClicked = false; //是否执行过点击一次
+                                if (fNames != null && !fNames.isEmpty()) {
+                                    for (AccessibilityNodeInfo fName : fNames) {
+                                        AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
+                                        AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
+                                        //Log.i(TAG,fName.getText().toString());
+                                        if (!checkNode.isChecked()) {
+                                            for (String friend : friends) {
+                                                if (fName.getText().toString().contains(friend)) {
+                                                    clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                    Log.i(TAG,"click:"+fName.getText().toString());
+                                                    bHasClicked = true;
+                                                    break;
+                                                }
                                             }
                                         }
+                                    }
+                                    bSelectionClicked = true;//表明已经检查执行过点击了
+                                    if(!bHasClicked){
+                                        Log.i(TAG,"没找到一个需要添加的朋友");
+                                        back2Home();
+                                        nStatus = 5;
+                                        i = 200;
                                     }
                                 }
                             }
 
-                            List<AccessibilityNodeInfo> fConfirmBtns = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCONFIRMNAMESID);
-                            if (fConfirmBtns != null && !fConfirmBtns.isEmpty()) {
-                                if (fConfirmBtns.get(0).isEnabled()) {
-                                    fConfirmBtns.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                    nStatus = 4;
-                                } else {
-                                    back2Home();
-                                    nStatus = 5;
-                                    i = 200;
+                            if(bSelectionClicked) {
+                                List<AccessibilityNodeInfo> fConfirmBtns = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCONFIRMNAMESID);
+                                if (fConfirmBtns != null && !fConfirmBtns.isEmpty()) {
+                                    if (fConfirmBtns.get(0).isEnabled()) {
+                                        fConfirmBtns.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        nStatus = 4;
+                                    } else {
+                                        //back2Home();
+                                        //nStatus = 5;
+                                        //i = 200;
+                                    }
                                 }
                             }
 
@@ -1525,11 +1540,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                     }
 
-                    if(bInviteAgain){
+                    if (bInviteAgain) {
                         java.util.Date d = new java.util.Date();
-                        if(d.getTime() > inviteAgainStTime.getTime()){
+                        if (d.getTime() > inviteAgainStTime.getTime()) {
                             Log.i(TAG, "二次邀请名单过期，重新更新二次邀请群");
-                            synchronized (inviteAgainSyncKey){
+                            synchronized (inviteAgainSyncKey) {
                                 inviteAgainGroup = "";
                             }
                         }
@@ -1613,7 +1628,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                             //自动二次邀请加群检查
                             //自动清空群消息处理
-                             Log.i(TAG, "nNowMsgCounter:" + String.valueOf(nNowMsgCounter) + ",nClearMsgNum:" + String.valueOf(nClearMsgNum));
+                            Log.i(TAG, "nNowMsgCounter:" + String.valueOf(nNowMsgCounter) + ",nClearMsgNum:" + String.valueOf(nClearMsgNum));
                             if (nClearMsgNum > 100 && nNowMsgCounter > nClearMsgNum) {
                                 nNowMsgCounter = 0;
                                 PendingIntent pendingIntent = notification.contentIntent;
@@ -1748,13 +1763,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             pendingIntent.send();
 
                                             int nLong = 100;//搜索时间
-                                            try{
+                                            try {
                                                 nLong = Integer.parseInt(cmds[2]);
-                                            }
-                                            catch (Exception e){
+                                            } catch (Exception e) {
                                                 nLong = 100;
                                             }
-                                            hbJlCheck( nLong );
+                                            hbJlCheck(nLong);
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
@@ -1903,6 +1917,26 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     bAutoClickOpenDetail = false;
                                     bAutoClickHbItem = false;
                                     bAutoClickOpenButton = false;
+                                }
+
+                            }
+                        }
+                        else{
+                            List<AccessibilityNodeInfo> hbNodes1 = hd.findAccessibilityNodeInfosByViewId(HBNONETEXT_STRING_ID);
+                            if (hbNodes1 != null && !hbNodes1.isEmpty()) {
+                                try {
+                                    if (hbNodes.get(0).getText().toString().contains("红包派完了")) {
+                                        Log.i(TAG, "最终红包派完了");
+                                        back2Home();
+                                        mHander.removeCallbacks(runnable);
+                                        bUnpackedSuccessful = false;
+                                        bAutoClickOpenDetail = false;
+                                        bAutoClickHbItem = false;
+                                        bAutoClickOpenButton = false;
+                                    }
+                                }
+                                catch (Exception e){
+                                    e.printStackTrace();
                                 }
 
                             }
@@ -2128,6 +2162,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         go.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                         if (backmode) {
                                             nStatus = 3;
+                                            nStatusCounter = 0;
                                         } else {
                                             nStatus = 1;
                                             nStatusCounter = 0;
@@ -2137,8 +2172,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     }
 
                                 }
-                            }
-                            else{
+                            } else {
                                 List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
                                 if (listTitles != null && !listTitles.isEmpty()) {
                                     try {
@@ -2166,7 +2200,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                                 arrayLists.add(ttNode.getText().toString());
                                                 Log.i(TAG, "点击红点列表1:" + ttNode.getText().toString());
                                                 nNowMsgCounter++;
-                                                currentTitle = ttNode.getText().toString()+"(10)";
+                                                currentTitle = ttNode.getText().toString() + "(10)";
                                                 listTitle.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                                 nStatusCounter = 0;
                                                 nStatus = 2;
@@ -2193,21 +2227,19 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             e.printStackTrace();
                                         }*/
 
-                                        List<AccessibilityNodeInfo> listviews = hd.findAccessibilityNodeInfosByViewId( CHATLISTWINDOWLISTVIEW_STRING_ID );
-                                        if(listviews!=null && !listviews.isEmpty()){
-                                            for(AccessibilityNodeInfo listview:listviews){
+                                        List<AccessibilityNodeInfo> listviews = hd.findAccessibilityNodeInfosByViewId(CHATLISTWINDOWLISTVIEW_STRING_ID);
+                                        if (listviews != null && !listviews.isEmpty()) {
+                                            for (AccessibilityNodeInfo listview : listviews) {
                                                 try {
                                                     listview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
                                                     //Log.i(TAG, "向上退1");
-                                                }
-                                                catch (Exception e){
+                                                } catch (Exception e) {
                                                     e.printStackTrace();
                                                 }
                                             }
                                         }
                                     }
-                                }
-                                else{
+                                } else {
                                     nStatusCounter++;
                                     if (nStatusCounter > 5) {
                                         //连续向下拉5次，都没有最新的群，说明到底了
@@ -2215,14 +2247,13 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         Log.i(TAG, "进入向前检查模式");
                                         nStatus = 3;
                                     }
-                                    List<AccessibilityNodeInfo> listviews = hd.findAccessibilityNodeInfosByViewId( CHATLISTWINDOWLISTVIEW_STRING_ID );
-                                    if(listviews!=null && !listviews.isEmpty()){
-                                        for(AccessibilityNodeInfo listview:listviews){
+                                    List<AccessibilityNodeInfo> listviews = hd.findAccessibilityNodeInfosByViewId(CHATLISTWINDOWLISTVIEW_STRING_ID);
+                                    if (listviews != null && !listviews.isEmpty()) {
+                                        for (AccessibilityNodeInfo listview : listviews) {
                                             try {
                                                 listview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
                                                 //Log.i(TAG, "向上退2");
-                                            }
-                                            catch (Exception e){
+                                            } catch (Exception e) {
                                                 e.printStackTrace();
                                             }
                                         }
@@ -2237,33 +2268,37 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                             List<AccessibilityNodeInfo> nodeSnds = hd.findAccessibilityNodeInfosByViewId(SOUNDBUTTON_STRING_ID);
                             if (nodeSnds != null && !nodeSnds.isEmpty()) {
-                                List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
-                                if (hbNodes != null && !hbNodes.isEmpty()) {
-                                    for (int j = hbNodes.size() - 1; j >= 0; j--) {
-                                        AccessibilityNodeInfo nodeInfo = hbNodes.get(j);
-                                        try {
-                                            AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent().getParent();
-                                            if (pNode.getClassName().toString().contains("LinearLayout")) {
-                                                pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                chatlist_detect_tm = Calendar.getInstance().getTimeInMillis();
-                                                notify_detect_tm = 0;
-                                                detect_tm = 0;
-                                                Log.i(TAG, "发现点击红包");
-                                                nStatus = 4;
-                                                nStatusCounter = 0;
-                                                break;
+                                List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                                if (titleNodes != null && !titleNodes.isEmpty()) {
+                                    windowtitle = titleNodes.get(0).getText().toString();
+                                    List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
+                                    if (hbNodes != null && !hbNodes.isEmpty()) {
+                                        for (int j = hbNodes.size() - 1; j >= 0; j--) {
+                                            AccessibilityNodeInfo nodeInfo = hbNodes.get(j);
+                                            try {
+                                                AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent().getParent();
+                                                if (pNode.getClassName().toString().contains("LinearLayout")) {
+                                                    pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                    chatlist_detect_tm = Calendar.getInstance().getTimeInMillis();
+                                                    notify_detect_tm = 0;
+                                                    detect_tm = 0;
+                                                    Log.i(TAG, "发现点击红包");
+                                                    nStatus = 4;
+                                                    nStatusCounter = 0;
+                                                    break;
+                                                }
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
                                             }
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
                                         }
                                     }
                                 }
 
-                                if(nStatus !=4) {
+                                if (nStatus != 4) {
                                     List<AccessibilityNodeInfo> moBtns = hd.findAccessibilityNodeInfosByViewId(HBMOREMSG_STRING_ID);
                                     if (moBtns != null && !moBtns.isEmpty()) {
                                         //com.tencent.mm:id/a5j
-                                        List<AccessibilityNodeInfo> listvs = hd.findAccessibilityNodeInfosByViewId( CHATCONTENTWINDOWLISTVIEW_STRING_ID);
+                                        List<AccessibilityNodeInfo> listvs = hd.findAccessibilityNodeInfosByViewId(CHATCONTENTWINDOWLISTVIEW_STRING_ID);
                                         if (listvs != null && !listvs.isEmpty()) {
                                             for (AccessibilityNodeInfo listv : listvs) {
                                                 try {
@@ -2287,7 +2322,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         for (AccessibilityNodeInfo listTitle : listTitles) {
                                             listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                         }
-                                        Log.i(TAG, "纠正点击");
+                                        Log.i(TAG, "纠正点击2");
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }
@@ -2302,7 +2337,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             backmode = true;
                             List<AccessibilityNodeInfo> nodeSnds = hd.findAccessibilityNodeInfosByViewId(SOUNDBUTTON_STRING_ID);//在列表窗口
                             if (nodeSnds != null && nodeSnds.isEmpty()) {
-                                List<AccessibilityNodeInfo> nodeInfos1 = hd.findAccessibilityNodeInfosByViewId( CHATLISTUNREADMSG_STRING_ID );
+                                List<AccessibilityNodeInfo> nodeInfos1 = hd.findAccessibilityNodeInfosByViewId(CHATLISTUNREADMSG_STRING_ID);
                                 if (nodeInfos1 != null && !nodeInfos1.isEmpty()) {
                                     for (AccessibilityNodeInfo nodeInfo : nodeInfos1) {
                                         try {
@@ -2310,7 +2345,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             AccessibilityNodeInfo ttNode = nodeInfo.getParent().getParent().getChild(1).getChild(0).getChild(0).getChild(0);
                                             Log.i(TAG, "点击有红点的列表2:" + ttNode.getText().toString());
                                             nNowMsgCounter++;
-                                            currentTitle = ttNode.getText().toString()+"(10)";
+                                            currentTitle = ttNode.getText().toString() + "(10)";
                                             clickableParentNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                             nStatus = 2;
                                             break;
@@ -2325,7 +2360,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     if (listTitles != null && !listTitles.isEmpty()) {
                                         try {
                                             listTitles.get(0).getParent().getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
-                                           // Log.i(TAG, "向下拉");
+                                            // Log.i(TAG, "向下拉");
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
@@ -2336,7 +2371,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                         break;
 
-                        case  4:{
+                        case 4: {
                             List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
                             if (hbNodes != null && !hbNodes.isEmpty()) {
                                 hbNodes.get(hbNodes.size() - 1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -2362,7 +2397,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                         break;
 
-                        case 5:{
+                        case 5: {
                             List<AccessibilityNodeInfo> hbNodes = null;
                             //发送人
                             hbNodes = hd.findAccessibilityNodeInfosByViewId(HBSENDER_STRING_ID);
@@ -2379,13 +2414,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     hb_amount = hbNodes.get(0).getText().toString();
                                 }
                                 wx_group_name = "";
-                                windowtitle = currentTitle;
-                                Log.i(TAG,"currentTitle="+currentTitle);
+                                Log.i(TAG, "windowtitle=" + windowtitle);
+                                Log.i(TAG, "currentTitle=" + currentTitle);
                                 uploadHbInfo();
                                 performGlobalAction(GLOBAL_ACTION_BACK);
                                 nStatus = 2;
-                            }
-                            else {
+                            } else {
                                 nStatusCounter++;
                                 if (nStatusCounter > 50) {
                                     nStatusCounter = 0;
@@ -2748,11 +2782,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         if (group_name.lastIndexOf("(") != -1) {
             group_name = group_name.substring(0, group_name.lastIndexOf("("));
         }
-        if(!wx_group_name.equals("")){
+        if (!wx_group_name.equals("")) {
             group_name = wx_group_name;
             wx_group_name = "";
         }
-        Log.i(TAG,"group_name="+group_name);
+        Log.i(TAG, "group_name=" + group_name);
         values.put("group_name", group_name);
         values.put("group_name_md5", ComFunc.MD5(group_name));
         values.put("sender", sender);
@@ -2887,8 +2921,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 }
                             }
 
-                            synchronized (inviteAgainSyncKey){
-                                if(inviteAgainGroup.equals("")){
+                            synchronized (inviteAgainSyncKey) {
+                                if (inviteAgainGroup.equals("")) {
                                     inviteAgainGroup = objResult.getString("inviteAgainGroup");
                                     inviteAgainStTime = new java.util.Date(new java.util.Date().getTime() + 30 * 1000);
                                 }
