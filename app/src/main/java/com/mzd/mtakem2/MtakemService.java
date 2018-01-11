@@ -1641,7 +1641,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
                                 try {
                                     pendingIntent.send();
-                                    hbJlCheck(200);
+                                    hbJlCheck(300);
                                     clearChatContent();
                                 } catch (Exception e) {
                                     e.printStackTrace();
