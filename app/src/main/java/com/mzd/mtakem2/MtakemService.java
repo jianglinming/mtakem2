@@ -575,6 +575,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     nStatus = 1;
                                 }
                             }
+                            else{
+                                List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
+                                if (listTitles != null && !listTitles.isEmpty()) {
+                                    nStatus = 1;
+                                }
+                            }
                         }
                         break;
                         case 1: {//点击“我”
@@ -1635,6 +1641,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
                                 try {
                                     pendingIntent.send();
+                                    hbJlCheck(200);
                                     clearChatContent();
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -1769,6 +1776,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                                 nLong = 100;
                                             }
                                             hbJlCheck(nLong);
+                                            clearChatContent();
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
@@ -2232,7 +2240,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             for (AccessibilityNodeInfo listview : listviews) {
                                                 try {
                                                     listview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
-                                                    //Log.i(TAG, "向上退1");
+                                                    Log.i(TAG, "向上退1");
                                                 } catch (Exception e) {
                                                     e.printStackTrace();
                                                 }
@@ -2252,7 +2260,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         for (AccessibilityNodeInfo listview : listviews) {
                                             try {
                                                 listview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
-                                                //Log.i(TAG, "向上退2");
+                                                Log.i(TAG, "向上退2");
                                             } catch (Exception e) {
                                                 e.printStackTrace();
                                             }
@@ -2436,7 +2444,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
             Thread.sleep(100);
         }
-        back2Home();
+       // back2Home();
         Log.i(TAG, "全部消息再检查完毕");
         return nStatus;
     }
