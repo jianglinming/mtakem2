@@ -41,6 +41,7 @@ import android.widget.RemoteViews;
 import com.mzd.mtakem2.utils.ComFunc;
 import com.mzd.mtakem2.utils.HbDataCheckThread;
 import com.mzd.mtakem2.utils.HttpUtils;
+import com.mzd.mtakem2.utils.ObtainParamThread;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -101,6 +102,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     //宿主指令
     private String hostCmd = ""; //宿主指令
 
+    private RemoteParam remoteParam;
     private String blackGroup = "";
     private java.util.Date blackGroupStTime;
     private Object blackSyncKey;
@@ -212,6 +214,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     //6.5.8:by2,6.5.10:bzr,6.5.13:c07,6.6.1:cba
     private static final String HBWXUSER_STRING_ID = "com.tencent.mm:id/cba";
 
+    //wx的号码
+    //6.6.1:cbb
+    private static final String HBWXUSERID_STRING_ID = "com.tencent.mm:id/cbb";
+
     //退群操作死相关
 
     //6.5.8:g5,6.5.10:g8,6.5.13:ge,6.6.1:h6(这个按钮直接可以点击，区别以前靠相对位置来点击)
@@ -301,11 +307,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private String hbcontent = "";
     private String hb_amount = "";
     private String wx_user = "";
+    private String wx_userId = "";
     private String wx_group_name = "";
     private String last_context_string = "";
     private HbDataCheckThread hbDataCheckThread;
     private Object lockkey;
-
+    private ObtainParamThread obtainParamThread;
 
     Runnable runnable = new Runnable() {
         @Override
@@ -372,6 +379,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     public void onDestroy() {
         super.onDestroy();
         hbDataCheckThread.stopThread();
+        obtainParamThread.stopThread();
         Log.i(TAG, "onDestroy");
     }
 
@@ -399,11 +407,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         hbDataCheckThread = new HbDataCheckThread(getApplicationContext(), lockkey);
         hbDataCheckThread.start();
 
-        blackGroupStTime = new java.util.Date(new java.util.Date().getTime() + 30 * 1000);
-        blackSyncKey = new Object();
+        remoteParam = new RemoteParam();
+        obtainParamThread = new ObtainParamThread(getApplicationContext(),mac,remoteParam);
+        obtainParamThread.start();
+        //后台参数（黑名单、再次邀请的群清单、邀请的对象）
 
-        inviteAgainStTime = new java.util.Date(new java.util.Date().getTime() + 30 * 1000);
-        inviteAgainSyncKey = new Object();
+
 
         //启动微信无响应检查函数
         haltCheckHandler.postDelayed(haltCheckFun, 1000);
@@ -423,6 +432,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         autoReplyDelay = Integer.parseInt(sharedPreferences.getString("edit_text_autoReplyDelay", "1000"));
         bCanUse = sharedPreferences.getBoolean("canUse", true);
         wx_user = sharedPreferences.getString("wxUser", "");
+        wx_userId = sharedPreferences.getString("wxUserId", "");
         bAutoReceptGroup = sharedPreferences.getBoolean("autoRecept", false);
         autoReceptParam = sharedPreferences.getString("autoParam", "240 350");
         bAutoQuitGroup = sharedPreferences.getBoolean("autoQuitGroup", false);
@@ -464,6 +474,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         if (key.equals("wxUser")) {
             wx_user = sharedPreferences.getString("wxUser", "");
         }
+        if (key.equals("wxUserId")) {
+            wx_userId = sharedPreferences.getString("wxUserId", "");
+        }
+
         if (key.equals("autoRecept")) {
             bAutoReceptGroup = sharedPreferences.getBoolean(key, false);
         }
@@ -522,6 +536,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
             setServiceInfo(info);
         }
+    }
+
+    @Override
+    protected boolean onKeyEvent(KeyEvent event) {
+        Log.i(TAG,"event get.");
+        return super.onKeyEvent(event);
     }
 
     @Override
@@ -799,7 +819,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         bClickJoinBtn = true;
                                         //自动生成邀请设定好友名单
                                         if (bAutoHostCmd) {
-                                            hostCmd = "admin[sp]邀请加入[sp]" + gName.trim() + "[sp]" + autoInviteParam;
+                                            hostCmd = "admin[sp]邀请加入[sp]" + ComFunc.MD5(gName.trim()) + "[sp]" + autoInviteParam;
                                             Log.i(TAG, "生成自动邀请指令:" + hostCmd);
                                         }
                                     } catch (Exception e) {
@@ -849,7 +869,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         int nStatus = 0;
         boolean bSelectionClicked = false;
         String friends[] = friendStr.split("\\|");
-        for (i = 0; i < 100; i++) {
+        for (i = 0; i < 200; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
             if (hd != null) {
                 try {
@@ -910,25 +930,37 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 //如果不加这一段findAccessibilityNodeInfosByViewId,引用的checkbox的checked，更新不准确？原因未知。
                                 List<AccessibilityNodeInfo> fChecks = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDCHECKBOXID);
                                 boolean bHasClicked = false; //是否执行过点击一次
+                                int yqNum = 0;
                                 if (fNames != null && !fNames.isEmpty()) {
                                     for (AccessibilityNodeInfo fName : fNames) {
-                                        AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
-                                        AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
-                                        //Log.i(TAG,fName.getText().toString());
-                                        if (!checkNode.isChecked()) {
-                                            for (String friend : friends) {
-                                                if (fName.getText().toString().contains(friend)) {
-                                                    clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                    Log.i(TAG,"click:"+fName.getText().toString());
-                                                    bHasClicked = true;
-                                                    break;
+                                        try { //一定要在这获取异常，不然会导致微信无响应
+                                            AccessibilityNodeInfo clickNode = fName.getParent().getParent().getParent().getParent();
+                                            AccessibilityNodeInfo checkNode = fName.getParent().getParent().getParent().getChild(2);
+                                            //Log.i(TAG,fName.getText().toString());
+                                            if (!checkNode.isChecked()) {
+                                                for (String friend : friends) {
+                                                    if (fName.getText().toString().contains(friend)) {
+                                                        clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                        Log.i(TAG, "click:" + fName.getText().toString());
+                                                        yqNum++;
+                                                        bHasClicked = true;
+                                                        break;
+                                                    }
                                                 }
                                             }
+                                        }
+                                        catch (Exception e){
+                                            e.printStackTrace();
+                                        }
+
+                                        if(yqNum>=5){ //好像微信一次邀请好友不能超过6个人，我这里为保险就去5个。（纠正错误：实际是上情况时如果邀请名单中有一个微信号接收消息受限制的话，则点击选择这个受限制微信号的前面所有的微信号邀请失败。
+                                            //break;
                                         }
                                     }
                                     bSelectionClicked = true;//表明已经检查执行过点击了
                                     if(!bHasClicked){
                                         Log.i(TAG,"没找到一个需要添加的朋友");
+                                        bSelectionClicked = false;
                                         back2Home();
                                         nStatus = 5;
                                         i = 200;
@@ -942,6 +974,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     if (fConfirmBtns.get(0).isEnabled()) {
                                         fConfirmBtns.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                         nStatus = 4;
+
                                     } else {
                                         //back2Home();
                                         //nStatus = 5;
@@ -984,7 +1017,17 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             List<AccessibilityNodeInfo> confirmContents = hd.findAccessibilityNodeInfosByText("群聊邀请确认");
                             if (confirmBtns != null && !confirmBtns.isEmpty()) {
                                 if (confirmContents != null && confirmContents.isEmpty()) {
-                                    confirmBtns.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    for (AccessibilityNodeInfo confirmBtn:confirmBtns){
+                                        try{
+                                            if (confirmBtn.getText().toString().contains("邀请")){
+                                                confirmBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                Log.i(TAG,"找到邀请确认按钮并点击");
+                                            }
+                                        }
+                                        catch (Exception e){
+                                            e.printStackTrace();
+                                        }
+                                    }
                                     nStatus = 5;
                                     i = 200;
                                     back2Home();
@@ -1538,26 +1581,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                     }
 
-                    //30秒重新更新一次黑名单
-                    if (bAutoQuitGroup) {
-                        java.util.Date d = new java.util.Date();
-                        if (d.getTime() > blackGroupStTime.getTime()) {
-                            Log.i(TAG, "黑名单有效期过了,重新更新黑名单");
-                            synchronized (blackSyncKey) {
-                                blackGroup = "";
-                            }
-                        }
-                    }
-
-                    if (bInviteAgain) {
-                        java.util.Date d = new java.util.Date();
-                        if (d.getTime() > inviteAgainStTime.getTime()) {
-                            Log.i(TAG, "二次邀请名单过期，重新更新二次邀请群");
-                            synchronized (inviteAgainSyncKey) {
-                                inviteAgainGroup = "";
-                            }
-                        }
-                    }
 
                     //Log.i(TAG,"content length="+String.valueOf(content.length()));
                     if (content.contains("[微信红包]") && content.length() < 100) { //<100过滤一些超长的带[微信红包]的垃圾信息
@@ -1587,7 +1610,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
-                            wx_user = getWxUserName();
+                            getWxUserNameAndId();
                             setEventTypeContentAndStatus(true);
                         } else {
 
@@ -1608,7 +1631,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                             //退群指令检查
                             String group_name_md5 = ComFunc.MD5(group_name);
-                            if (bAutoQuitGroup && blackGroup.contains("{={" + group_name_md5 + "}=}")) {
+                            if (bAutoQuitGroup && remoteParam.blackGroups.contains("{={" + group_name_md5 + "}=}")) {
                                 PendingIntent pendingIntent = notification.contentIntent;
                                 setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
                                 try {
@@ -1622,7 +1645,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             }
 
                             //二次邀请加群检查
-                            if (bInviteAgain && inviteAgainGroup.contains("{={" + group_name_md5 + "}=}")) {
+                            if (bInviteAgain && remoteParam.inviteAgainGroup.contains("{={" + group_name_md5 + "}=}")) {
                                 PendingIntent pendingIntent = notification.contentIntent;
                                 setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
                                 try {
@@ -1630,7 +1653,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
-                                yqfriends(autoInviteParam);
+                                yqfriends(remoteParam.autoInviteParam);
                                 setEventTypeContentAndStatus(true);
                                 return;
                             }
@@ -1644,7 +1667,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
                                 try {
                                     pendingIntent.send();
-                                    hbJlCheck(300);
+                                    clearChatContent();
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -1730,13 +1753,13 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             e.printStackTrace();
                                         }
                                         String helpMsg = "mtakem2版本:" + app_ver + "\n" + "[sp]发消息[sp]要发的群[sp]要发的内容\n" +
-                                                "[sp]后台参数设置[sp]nClearMsgNum[sp]101\n[sp]后台参数设置[sp]autoInviteParam[sp]jzgz01|jzgz02|jzgz03\n[sp]后台参数设置[sp]autoInviteParam[sp]jzgz01|jzgz02|jzgz03\n" +
+                                                "[sp]后台参数设置[sp]nClearMsgNum[sp]101\n[sp]后台参数设置[sp]autoInviteParam[sp]jzgz01|jzgz02|jzgz03\n" +
                                                 "[sp]后台参数设置[sp]remoteHostName[sp]你的微信名 微信群名\n" +
                                                 "[sp]清空群消息[sp]随意填[sp]随意\n[sp]申请ROOT[sp]随意填[sp]随意\n" +
                                                 "[sp]邀请加入[sp]要邀请的群[sp]邀请谁加入？\n" +
                                                 "[sp]二维码加群[sp]填一个群并给这个群发二维码[sp]随意\n" +
                                                 "[sp]获取余额[sp]要反馈的群名称[sp]随意\n" +
-                                                "[sp]搜索历史消息[sp]作用时间（必须是数字）[sp]随意\n";
+                                                "[sp]搜索历史消息[sp]作用时间（必须是数字）[sp]随意\n" ;
                                         sendMsg(group_name, helpMsg);
                                         back2Home();
                                         hostCmd = "";
@@ -1752,17 +1775,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         }
                                         sendMsg(cmds[2], wx_user + ":" + getAndSendWxAmount());
                                         back2Home();
-                                        hostCmd = "";
-                                        setEventTypeContentAndStatus(true);
-                                    } else if (cmds[1].equals("邀请测试")) {
-                                        PendingIntent pendingIntent = notification.contentIntent;
-                                        setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
-                                        try {
-                                            pendingIntent.send();
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                        yqfriends(autoInviteParam);
                                         hostCmd = "";
                                         setEventTypeContentAndStatus(true);
                                     } else if (cmds[1].equals("搜索历史消息")) {
@@ -1782,8 +1794,19 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
-                                        //
                                         hostCmd = "";
+                                        setEventTypeContentAndStatus(true);
+                                    }
+                                    else{
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        sendMsg(group_name, "已收到指令:"+hostCmd);
+                                        back2Home();
                                         setEventTypeContentAndStatus(true);
                                     }
 
@@ -1793,15 +1816,17 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             //宿主指令格式:指令名称 群名称 相关参数
                             if (!"".equals(hostCmd)) {
                                 String[] cmds = hostCmd.split("\\[sp\\]");
-                                //第二个参数定义为群名称，所有指令都针对群而设立
-                                String groupkeys[] = cmds[2].split(" ");
                                 boolean bIsTheGroup = true;
+                                //第二个参数定义为群名称，所有指令都针对群而设立
+                                /*
+                                String groupkeys[] = cmds[2].split(" ");
                                 for (String groupKey : groupkeys) {
                                     if (!group_name.contains(groupKey.trim())) {
                                         bIsTheGroup = false;
                                         break;
                                     }
-                                }
+                                }*/
+                                bIsTheGroup = ComFunc.MD5(group_name).equals(cmds[2]);
                                 if (cmds.length == 4 && bIsTheGroup) {
                                     if (cmds[1].equals("邀请加入")) {
                                         PendingIntent pendingIntent = notification.contentIntent;
@@ -2562,11 +2587,12 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     /*
         获得微信名称
      */
-    private String getWxUserName() throws InterruptedException {
+    private void getWxUserNameAndId() throws InterruptedException {
 
         int i = 0;
         try {
             boolean bClickReturn1 = false;
+            boolean bClickReturn2 = false;
             for (i = 0; i < 30; i++) {
                 AccessibilityNodeInfo hd = getRootInActiveWindow();
                 if (hd != null) {
@@ -2579,22 +2605,32 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             bClickReturn1 = true;
                         }
                     }
-                    if (bClickReturn1) {
+                    if (bClickReturn1 && !bClickReturn2) {
                         List<AccessibilityNodeInfo> bottomBtns = hd.findAccessibilityNodeInfosByViewId(HBBOTTOMBTN_STRING_ID);
                         for (AccessibilityNodeInfo bottomBtn : bottomBtns) {
                             if (bottomBtn.getText() != null && bottomBtn.getText().toString().contains("我")) {
                                 bottomBtn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                bClickReturn2 = true;
                             }
                         }
+                    }
+
+                    if(bClickReturn1&&bClickReturn2){
                         List<AccessibilityNodeInfo> wxnames = hd.findAccessibilityNodeInfosByViewId(HBWXUSER_STRING_ID);
-                        for (AccessibilityNodeInfo wxname : wxnames) {
-                            back2Home();
-                            Log.i(TAG, "wxUser:" + wxname.getText().toString());
+                        List<AccessibilityNodeInfo> wxuserids = hd.findAccessibilityNodeInfosByViewId(HBWXUSERID_STRING_ID);
+                        if(!wxnames.isEmpty()&&!wxuserids.isEmpty()){
+                            wx_user = wxnames.get(0).getText().toString();
+                            wx_userId = wxuserids.get(0).getText().toString();
+                            wx_userId = wx_userId.substring("微信号：".length());
+                            Log.i(TAG, "wxUser:" + wx_user);
+                            Log.i(TAG, "wxUserId:" + wx_userId);
                             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                             SharedPreferences.Editor editor = sharedPreferences.edit();
-                            editor.putString("wxUser", wxname.getText().toString());
+                            editor.putString("wxUser", wx_user);
+                            editor.putString("wxUserId", wx_userId);
                             editor.commit();
-                            return wxname.getText().toString();
+                            back2Home();
+                            break;
                         }
                     }
                 }
@@ -2605,7 +2641,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             Log.i(TAG, "error");
             e.printStackTrace();
         }
-        return "";
     }
 
     /*根据系统的配置，随机获得回复的词语*/
@@ -2814,6 +2849,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         item.put("device", device_model + "(" + version_release + ")");
         item.put("machine_id", mac);
         item.put("wxUser", wx_user);
+        item.put("wxUserId",wx_userId);
         item.put("mtakem2ver", app_ver);
         item.put("group_name", values.getAsString("group_name"));
         item.put("group_name_md5", values.getAsString("group_name_md5"));
@@ -2894,6 +2930,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         item.put("group_name_md5", strGroupNameMd5);
         item.put("last_send_person", last_send_person);
         item.put("wxUser", wxUser);
+        item.put("wxUserId",wx_userId);
         item.put("mac", mac);
         item.put("len", len);
         item.put("receive_time", df.format(new java.util.Date()));
@@ -2923,20 +2960,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         JSONObject objResult = new JSONObject(URLDecoder.decode(result, "gbk"));
                         if (objResult.getBoolean("result")) {
                             //Log.i(TAG, "上传成功:" + URLDecoder.decode(result, "gbk"));
-
-                            synchronized (blackSyncKey) {
-                                if (blackGroup.equals("")) {
-                                    blackGroup = objResult.getString("blackGroup");
-                                    blackGroupStTime = new java.util.Date(new java.util.Date().getTime() + 30 * 1000);
-                                }
-                            }
-
-                            synchronized (inviteAgainSyncKey) {
-                                if (inviteAgainGroup.equals("")) {
-                                    inviteAgainGroup = objResult.getString("inviteAgainGroup");
-                                    inviteAgainStTime = new java.util.Date(new java.util.Date().getTime() + 30 * 1000);
-                                }
-                            }
+                            //Log.i(TAG,"blackGroups:"+remoteParam.blackGroups);
+                            //Log.i(TAG,"inviteAgainGroup:"+remoteParam.inviteAgainGroup);
+                            //Log.i(TAG,"autoInviteParam:"+remoteParam.autoInviteParam);
                         }
 
                     }

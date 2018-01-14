@@ -133,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("wxUser", "");
+                editor.putString("wxUserId","");
                 editor.commit();
                 TextView txtWxUser = (TextView) findViewById(R.id.txtWxUser);
                 txtWxUser.setText("()");
@@ -154,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         }
         if (key.equals("wxUser")) {
             TextView txtWxUser = (TextView) findViewById(R.id.txtWxUser);
-            txtWxUser.setText("(" + sharedPreferences.getString("wxUser", "") + ")");
+            txtWxUser.setText(sharedPreferences.getString("wxUser", "") + "("+sharedPreferences.getString("wxUserId", "")+")");
         }
     }
 
@@ -176,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
         TextView txtWxUser = (TextView) findViewById(R.id.txtWxUser);
-        txtWxUser.setText("(" + sharedPreferences.getString("wxUser", "") + ")");
+        txtWxUser.setText(sharedPreferences.getString("wxUser", "") + "("+sharedPreferences.getString("wxUserId", "")+")");
 
 
         //监听AccessibilityService 变化

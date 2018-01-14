@@ -57,7 +57,9 @@
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:defaultValue="|"
-        android:title="自动邀请名单（用|隔开)" />
+        android:title="自动邀请名单（用|隔开)"
+        android:editable="false"
+        />
 
     <CheckBoxPreference
         android:defaultValue="false"
