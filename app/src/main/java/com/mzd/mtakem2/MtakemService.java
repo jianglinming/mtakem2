@@ -686,7 +686,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 try {
                                     if (itemIndex > hbItems.size() - 1) {
                                         nStatus = 20; //退出不执行
-                                        Log.i(TAG, "退出不执行");
+                                        Log.i(TAG, "退出不执行1");
                                         i = 200;
                                     } else {
                                         AccessibilityNodeInfo hbItem = hbItems.get(itemIndex);
@@ -697,6 +697,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     }
                                 } catch (Exception e) {
                                     e.printStackTrace();
+                                }
+
+                                //如果在聊天列表下，则直接退出去
+                                List<AccessibilityNodeInfo> bottomBtns = hd.findAccessibilityNodeInfosByViewId(HBBOTTOMBTN_STRING_ID);
+                                if(bottomBtns!=null && !bottomBtns.isEmpty()){
+                                    nStatus = 20; //退出不执行
+                                    Log.i(TAG, "退出不执行2");
+                                    i = 200;
                                 }
 
 
