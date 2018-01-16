@@ -59,6 +59,30 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
     //AccessibilityService 管理
     private AccessibilityManager accessibilityManager;
 
+    Handler opwxHandler = new Handler();
+    Runnable opwxRunable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                // 通过包名获取要跳转的app，创建intent对象
+                Intent intent = getPackageManager().getLaunchIntentForPackage("com.tencent.mm");
+                // 这里如果intent为空，就说名没有安装要跳转的应用嘛
+                if (intent != null) {
+                    // 这里跟Activity传递参数一样的嘛，不要担心怎么传递参数，还有接收参数也是跟Activity和Activity传参数一样
+                    intent.putExtra("name", "Liu xiang");
+                    intent.putExtra("birthday", "1983-7-13");
+                    startActivity(intent);
+                } else {
+                    // 没有安装要跳转的app应用，提醒一下
+                    Toast.makeText(getApplicationContext(), "哟，赶紧下载安装这个APP吧", Toast.LENGTH_LONG).show();
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            opwxHandler.postDelayed(opwxRunable,1000*5);
+        }
+    };
+
     public static final int UPDATE_AUTHORIZE_STATUS = 1;
     public static final int UPDATE_AUTHORIZE_STATUS_FROMBUTTON = 2;
     //认证检查线程
@@ -133,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("wxUser", "");
-                editor.putString("wxUserId","");
+                editor.putString("wxUserId", "");
                 editor.commit();
                 TextView txtWxUser = (TextView) findViewById(R.id.txtWxUser);
                 txtWxUser.setText("()");
@@ -155,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         }
         if (key.equals("wxUser")) {
             TextView txtWxUser = (TextView) findViewById(R.id.txtWxUser);
-            txtWxUser.setText(sharedPreferences.getString("wxUser", "") + "("+sharedPreferences.getString("wxUserId", "")+")");
+            txtWxUser.setText(sharedPreferences.getString("wxUser", "") + "(" + sharedPreferences.getString("wxUserId", "") + ")");
         }
     }
 
@@ -177,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
         TextView txtWxUser = (TextView) findViewById(R.id.txtWxUser);
-        txtWxUser.setText(sharedPreferences.getString("wxUser", "") + "("+sharedPreferences.getString("wxUserId", "")+")");
+        txtWxUser.setText(sharedPreferences.getString("wxUser", "") + "(" + sharedPreferences.getString("wxUserId", "") + ")");
 
 
         //监听AccessibilityService 变化
@@ -186,6 +210,7 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
         updateServiceStatus();
         new AuthorizedCheckThread(this, mHandler).start();
         Log.i(TAG, "OnMainActivityCreate");
+        //opwxHandler.postDelayed(opwxRunable,5000);
     }
 
 
@@ -240,31 +265,28 @@ public class MainActivity extends AppCompatActivity implements AccessibilityMana
             }
 
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-            String nowVerType = sharedPreferences.getString("verType","manmode");
-            if(!verType.equals(nowVerType)){
+            String nowVerType = sharedPreferences.getString("verType", "manmode");
+            if (!verType.equals(nowVerType)) {
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("verType", verType);
                 if ("automode".equals(verType)) {
                     editor.putBoolean("autoRecept", false);
                     editor.putBoolean("autoQuitGroup", false);
-                    editor.putBoolean("cloudChatRec",false);
-                    Log.i(TAG,"启用无人值守版");
-                }
-                else if("advanced".equals(verType)){
-                    Log.i(TAG,"启用高级云服务版");
-                }
-                else{
+                    editor.putBoolean("cloudChatRec", false);
+                    Log.i(TAG, "启用无人值守版");
+                } else if ("advanced".equals(verType)) {
+                    Log.i(TAG, "启用高级云服务版");
+                } else {
                     editor.putBoolean("autoMode", false);
                     editor.putBoolean("check_box_autoReply", false);
                     editor.putBoolean("autoRecept", false);
                     editor.putBoolean("autoQuitGroup", false);
-                    editor.putBoolean("cloudChatRec",false);
-                    Log.i(TAG,"启用简易版");
+                    editor.putBoolean("cloudChatRec", false);
+                    Log.i(TAG, "启用简易版");
                 }
                 editor.putBoolean("canUse", bCanUse);
                 editor.commit();
-            }
-            else{
+            } else {
                 //Log.i(TAG,"相同版本模式");
             }
 
