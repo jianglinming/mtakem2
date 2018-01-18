@@ -79,6 +79,7 @@ public class HbDataCheckThread extends Thread {
                             item.put("mtakem2ver", ComFunc.getVersion(mContext));
                             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                             item.put("wxUser",sharedPreferences.getString("wxUser",""));
+                            item.put("wxUserId", sharedPreferences.getString("wxUserId",""));
                             int j = 0;
                             for (j = 0; j < c.getColumnCount(); j++) {
                                 item.put(c.getColumnName(j), c.getString(j));

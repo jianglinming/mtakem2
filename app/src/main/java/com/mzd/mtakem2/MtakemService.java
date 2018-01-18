@@ -701,7 +701,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                                 //如果在聊天列表下，则直接退出去
                                 List<AccessibilityNodeInfo> bottomBtns = hd.findAccessibilityNodeInfosByViewId(HBBOTTOMBTN_STRING_ID);
-                                if(bottomBtns!=null && !bottomBtns.isEmpty()){
+                                if (bottomBtns != null && !bottomBtns.isEmpty()) {
                                     nStatus = 20; //退出不执行
                                     Log.i(TAG, "退出不执行2");
                                     i = 200;
@@ -712,18 +712,18 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 //如果查看只有一个红包信息，则直接进入聊天界面
                                 List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
                                 if (hbNodes != null && !hbNodes.isEmpty()) {
-                                    Log.i(TAG, "只有一个红包，已经发现红包，去到9处理." );
+                                    Log.i(TAG, "只有一个红包，已经发现红包，去到9处理.");
                                     nStatus = 9;
-                                }else{
+                                } else {
                                     List<AccessibilityNodeInfo> moBtns = hd.findAccessibilityNodeInfosByViewId(HBMOREMSG_STRING_ID);
-                                    if(moBtns!=null && !moBtns.isEmpty()){
-                                        Log.i(TAG, "有更多消息，去到9处理." );
+                                    if (moBtns != null && !moBtns.isEmpty()) {
+                                        Log.i(TAG, "有更多消息，去到9处理.");
                                         nStatus = 9;
                                     }
                                 }
                                 nStatusCounter++;
-                                if(nStatusCounter>50){
-                                    Log.i(TAG, "7超时，去到9处理." );
+                                if (nStatusCounter > 50) {
+                                    Log.i(TAG, "7超时，去到9处理.");
                                     nStatusCounter = 0;
                                     nStatus = 9;
                                 }
@@ -1491,7 +1491,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 if (nStatus != 1) {//及还没找到
                                     if (listTitles.get(0).getText().toString().equals(lastGroupName)) {
                                         nStatusCounter++;
-                                        if (nStatusCounter > 5) { //超时没找到的话
+                                        if (nStatusCounter > 10) { //超时没找到的话
                                             lastGroupName = listTitles.get(listTitles.size() - 1).getText().toString();
                                             nStatus = 3; //向前面寻找
                                             nStatusCounter = 0;
@@ -1525,7 +1525,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 if (nStatus != 1) {
                                     if (listTitles.get(listTitles.size() - 1).getText().toString().equals(lastGroupName)) {
                                         nStatusCounter++;
-                                        if (nStatusCounter > 5) { //超时没找到的话
+                                        if (nStatusCounter > 10) { //超时没找到的话
                                             i = 200;
                                             nStatus = 70; //向前面寻找
                                             nStatusCounter = 0;
@@ -1848,7 +1848,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                             //自动二次邀请加群检查
                             //自动清空群消息处理
-                            Log.i(TAG, "nNowMsgCounter:" + String.valueOf(nNowMsgCounter) + ",nClearMsgNum:" + String.valueOf(nClearMsgNum));
+                           // Log.i(TAG, "nNowMsgCounter:" + String.valueOf(nNowMsgCounter) + ",nClearMsgNum:" + String.valueOf(nClearMsgNum));
                             if (nClearMsgNum > 100 && nNowMsgCounter > nClearMsgNum) {
                                 nNowMsgCounter = 0;
                                 PendingIntent pendingIntent = notification.contentIntent;
@@ -1984,6 +1984,17 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         }
                                         hostCmd = "";
                                         setEventTypeContentAndStatus(true);
+                                    } else if (cmds[1].equals("二维码加群")) {
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        //处理后返回消息
+                                        hostCmd = qrcodeJoinGroup(cmds[2]);
+                                        setEventTypeContentAndStatus(true);
                                     } else {
                                         PendingIntent pendingIntent = notification.contentIntent;
                                         setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
@@ -2025,17 +2036,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         }
                                         yqfriends(cmds[3]);
                                         hostCmd = "";
-                                        setEventTypeContentAndStatus(true);
-                                    } else if (cmds[1].equals("二维码加群")) {
-                                        PendingIntent pendingIntent = notification.contentIntent;
-                                        setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
-                                        try {
-                                            pendingIntent.send();
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                        //处理后返回消息
-                                        hostCmd = qrcodeJoinGroup(cmds[3]);
                                         setEventTypeContentAndStatus(true);
                                     }
                                 }
