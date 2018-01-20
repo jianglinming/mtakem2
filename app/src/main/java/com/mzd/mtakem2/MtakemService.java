@@ -1894,6 +1894,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             e.printStackTrace();
                                         }
                                         hostCmd = "";
+                                    } else if (cmds[1].equals("执行命令")) {//申请ROOT
+                                        try {
+                                            execShellCmd(cmds[2]);
+                                            Log.i(TAG, "执行命令："+cmds[2]);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        hostCmd = "";
                                     } else if (cmds[1].equals("清空群消息")) {//清空消息
                                         nNowMsgCounter = 0; //群消息计数清零
                                         PendingIntent pendingIntent = notification.contentIntent;
