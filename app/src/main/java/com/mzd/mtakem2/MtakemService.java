@@ -1747,7 +1747,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         //upload msg，个人发送消息和其他加入朋友的消息不记录（个人消息发送人和消息标题相同，而新创建群聊，未命名，首次消息为标题为群成员用顿号分开）
                         if (bCloudChatRec) {
                             try {
-                                rdnonhbInfo(group_name, send_person, wx_user, content.length());
+                                rdnonhbInfo(group_name, content,send_person, wx_user, content.length());
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -3110,7 +3110,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     /*
         上传历史情况
      */
-    private void rdnonhbInfo(String group_name, String last_send_person, String wxUser, int len) throws JSONException {
+    private void rdnonhbInfo(String group_name,String content, String last_send_person, String wxUser, int len) throws JSONException {
         final JSONObject obj = new JSONObject();
         JSONArray array = new JSONArray();
         JSONObject item = new JSONObject();
@@ -3120,6 +3120,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         // Log.i(TAG, group_name);
         // Log.i(TAG, strGroupNameMd5);
         item.put("group_name", group_name);
+        item.put("content",content);
         item.put("group_name_md5", strGroupNameMd5);
         item.put("last_send_person", last_send_person);
         item.put("wxUser", wxUser);
