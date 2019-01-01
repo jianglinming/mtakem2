@@ -2216,7 +2216,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     className = WECHAT_LUCKMONEY_GENERAL_ACTIVITY;
                 }
 
-                //Log.i(TAG, className);
+                Log.i(TAG, className);
                 if (className.contains("LauncherUI") || className.contains("ui.chatting")) {
                     AccessibilityNodeInfo hd = getRootInActiveWindow();
                     if (hd != null) {
@@ -2295,7 +2295,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         }
                     }
 
-                } else if (className.contains("luckymoney.ui.En_")) {
+                } else if (className.contains("luckymoney.ui.En_") || className.contains("luckymoney.ui.LuckyMoneyReceiveUI")) {
                     AccessibilityNodeInfo hd = getRootInActiveWindow();
                     if (!bAutoClickOpenButton) {
                         List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
