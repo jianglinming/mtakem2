@@ -138,12 +138,20 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
 
     //聊天窗中的讲话按钮，用来区分当前页面是聊天窗口，还是聊天列表窗口
-    // 6.5.7：a3_  ,6.5.8:a47,6.5.10:a5c,6.5.13:a6e,6.6.1:aad,6.7.2:aen
-    private static final String SOUNDBUTTON_STRING_ID = "com.tencent.mm:id/aen";
+    // 6.5.7：a3_  ,6.5.8:a47,6.5.10:a5c,6.5.13:a6e,6.6.1:aad,6.7.2:aen,7.0:alk
+    private static final String SOUNDBUTTON_STRING_ID = "com.tencent.mm:id/alk";
 
     //聊天窗口的标题信息，标识了所在的群或者聊天对象
-    //6.5.7:gh , 6.5.8:gp,6.5.10:gs,6.5.13:gz,6.6.1:ha,6.7.2:j1
-    private static final String WINDOWTITLETEXT_STRING_ID = "com.tencent.mm:id/j1";
+    //6.5.7:gh , 6.5.8:gp,6.5.10:gs,6.5.13:gz,6.6.1:ha,6.7.2:j1,7.0:jw
+    private static final String WINDOWTITLETEXT_STRING_ID = "com.tencent.mm:id/jw";
+
+    //android 7.0取消了领取红包四个字,这里准备使用,红包标志这个特征
+    //7.0,apc
+    private static final String HB_LOGO_STRING_ID = "com.tencent.mm:id/apc";
+
+    //显示红包领取情况的（比如：已领取，已被领完）
+    private static final String HB_LQSTATUS_STRING_ID = "com.tencent.mm:id/ape";
+
 
     //聊天的文本控件ID
     // 6.5.7:if  , 6.5.8:im,6.5.10:ij,6.5.13:iq(NAF=TRUE,not accessibility friendly)
@@ -154,52 +162,52 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private static final String WINDOWCHATTTIME_STRING_ID = "com.tencent.mm:id/u";
 
     //聊天列表中的最后文本信息
-    //6.5.7:afx , 6.5.8:agy,6.5.10:aii,6.5.13:aje,6.6.1:apv,6.7.2:aun
-    private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/aun";
+    //6.5.7:afx , 6.5.8:agy,6.5.10:aii,6.5.13:aje,6.6.1:apv,6.7.2:aun,7.0:b4q
+    private static final String CHATLISTTEXT_STRING_ID = "com.tencent.mm:id/b4q";
 
     //com.tencent.mm:id/ie
-    //6.5.13:聊天列表中的未读红点文本控件ID,6.6.1:com.tencent.mm:id/iu,6.7.2:lg
-    private static final String CHATLISTUNREADMSG_STRING_ID = "com.tencent.mm:id/lg";
+    //6.5.13:聊天列表中的未读红点文本控件ID,6.6.1:com.tencent.mm:id/iu,6.7.2:lg,7.0:mm
+    private static final String CHATLISTUNREADMSG_STRING_ID = "com.tencent.mm:id/mm";
 
     //聊天列表中的群标题信息
-    //6.5.10 aig,6.5.13:ajc,6.6.1:apt,6.7.2:aul
-    private static final String CHATLISTTITLE_STRING_ID = "com.tencent.mm:id/aul";
+    //6.5.10 aig,6.5.13:ajc,6.6.1:apt,6.7.2:aul,7.0:b4o
+    private static final String CHATLISTTITLE_STRING_ID = "com.tencent.mm:id/b4o";
 
     //聊天窗中的HB信息
     //6.5.7:   , 6.5.8:a6_ ,6.5.10:a8h,6.5.13:a8q
     private static final String HB_STRING_ID = "com.tencent.mm:id/a8q";
 
     //HB打开按钮
-    //6.5.7:bjj , 6.5.8:bm4,6.5.10:bnr,6.5.13:bp6,6.6.1:c2i,6.7.2:cb1
-    private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/cb1";
+    //6.5.7:bjj , 6.5.8:bm4,6.5.10:bnr,6.5.13:bp6,6.6.1:c2i,6.7.2:cb1,7.0:cv0
+    private static final String HBOPENBUTTON_STRING_ID = "com.tencent.mm:id/cv0";
 
     //HB派完了文本
-    //6.5.7: , 6.5.8:bm3,6.5.10:bnq,6.5.13:bp5,6.6.1:c2h,6.7.2:cb0
-    private static final String HBNONETEXT_STRING_ID = "com.tencent.mm:id/cb0";
+    //6.5.7: , 6.5.8:bm3,6.5.10:bnq,6.5.13:bp5,6.6.1:c2h,6.7.2:cb0,7.0:com.tencent.mm:id/cuz
+    private static final String HBNONETEXT_STRING_ID = "com.tencent.mm:id/cuz";
 
     //HB金额文本按钮
-    //6.5.7:bfw , 6.5.8:bii,6.5.10:bk6,6.5.13:bli,6.6.1:byw,6.7.2:c8g
-    private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/c8g";
+    //6.5.7:bfw , 6.5.8:bii,6.5.10:bk6,6.5.13:bli,6.6.1:byw,6.7.2:c8g,7.0:cqv
+    private static final String HBAMOUNTTEXT_STRING_ID = "com.tencent.mm:id/cqv";
 
     //HB发送人文本
-    //6.5.7: , 6.5.8:bie,6.5.10:bk2,6.5.13:ble,6.6.1:bys,6.7.2:c8c
-    private static final String HBSENDER_STRING_ID = "com.tencent.mm:id/c8c";
+    //6.5.7: , 6.5.8:bie,6.5.10:bk2,6.5.13:ble,6.6.1:bys,6.7.2:c8c,7.0:cqr
+    private static final String HBSENDER_STRING_ID = "com.tencent.mm:id/cqr";
 
     //HB内容文本
-    //6.5.7: , 6.5.8:big,6.5.10:bk4,6.5.13:blg,6.6.1:byu,6.7.2:c8e
-    private static final String HBCONTENT_STRING_ID = "com.tencent.mm:id/c8e";
+    //6.5.7: , 6.5.8:big,6.5.10:bk4,6.5.13:blg,6.6.1:byu,6.7.2:c8e,7.0:cqt
+    private static final String HBCONTENT_STRING_ID = "com.tencent.mm:id/cqt";
 
     //聊天窗返回列表窗返回箭头
-    //6.5.8:gn,6.5.10:gq,6.5.13:gx,6.6.1:h9,6.7.2:iz
-    private static final String HBRETURN_STRING_ID = "com.tencent.mm:id/iz";
+    //6.5.8:gn,6.5.10:gq,6.5.13:gx,6.6.1:h9,6.7.2:iz,7.0:ju
+    private static final String HBRETURN_STRING_ID = "com.tencent.mm:id/ju";
 
     //wx聊天列表下面的按钮ID
-    //6.5.8:buh,6.5.10:bw6,6.5.13:bwm,6.6.1:c8t,6.7.2:chp
-    private static final String HBBOTTOMBTN_STRING_ID = "com.tencent.mm:id/chp";
+    //6.5.8:buh,6.5.10:bw6,6.5.13:bwm,6.6.1:c8t,6.7.2:chp,7.0:com.tencent.mm:id/d3t
+    private static final String HBBOTTOMBTN_STRING_ID = "com.tencent.mm:id/d3t";
 
     //wx聊天窗口中的“更多未读消息按钮”，聊天窗口向上拉，直到未读内容全部读取就会自动消失
-    //6.5.13：a5t,6.6.1:a_r,6.7.2:ae1
-    private static final String HBMOREMSG_STRING_ID = "com.tencent.mm:id/ae1";
+    //6.5.13：a5t,6.6.1:a_r,6.7.2:ae1,7.0:aky
+    private static final String HBMOREMSG_STRING_ID = "com.tencent.mm:id/aky";
 
 
     //wx聊天窗口中的listview控件ID
@@ -211,17 +219,17 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private static final String CHATLISTWINDOWLISTVIEW_STRING_ID = "com.tencent.mm:id/ccf";
 
     //wx名称的textid
-    //6.5.8:by2,6.5.10:bzr,6.5.13:c07,6.6.1:cba,6.7.2:a0b
-    private static final String HBWXUSER_STRING_ID = "com.tencent.mm:id/a0b";
+    //6.5.8:by2,6.5.10:bzr,6.5.13:c07,6.6.1:cba,6.7.2:a0b,7.0:a5b
+    private static final String HBWXUSER_STRING_ID = "com.tencent.mm:id/a5b";
 
     //wx的号码
-    //6.6.1:cbb,6.7.2:cl8
-    private static final String HBWXUSERID_STRING_ID = "com.tencent.mm:id/cl8";
+    //6.6.1:cbb,6.7.2:cl8,7.0:d7y
+    private static final String HBWXUSERID_STRING_ID = "com.tencent.mm:id/d7y";
 
     //退群操作死相关
 
-    //6.5.8:g5,6.5.10:g8,6.5.13:ge,6.6.1:h6,6.7.2:iw(这个按钮直接可以点击，区别以前靠相对位置来点击)
-    private static final String HBOPENGROUPDETAIL_STRING_ID = "com.tencent.mm:id/iw";
+    //6.5.8:g5,6.5.10:g8,6.5.13:ge,6.6.1:h6,6.7.2:iw(这个按钮直接可以点击，区别以前靠相对位置来点击),7.0:jr
+    private static final String HBOPENGROUPDETAIL_STRING_ID = "com.tencent.mm:id/jr";
 
     //群信息的列表ID(listview,scrollable:true)
     //6.5.8:list,6.5.10:list,6.5.13:list,6.6.1:list,6.7.2:list
@@ -232,8 +240,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private static final String HBDELANDQUIT_STRING_ID = "android:id/title";
 
     //删除并退出确认按钮
-    //6.5.8:ad8,6.5.10:aes,6.5.13:afm,6.6.1:alo,6.7.2:apj
-    private static final String HBDELANDQUITCONFIRM_STRING_ID = "com.tencent.mm:id/apj";
+    //6.5.8:ad8,6.5.10:aes,6.5.13:afm,6.6.1:alo,6.7.2:apj,7.0:ayb
+    private static final String HBDELANDQUITCONFIRM_STRING_ID = "com.tencent.mm:id/ayb";
 
     //加群相关
 
@@ -625,7 +633,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("设置");
                             if (btns != null && !btns.isEmpty()) {
                                 for (AccessibilityNodeInfo btn : btns) {
-                                    btn.getParent().getParent().getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    btn.getParent().getParent().getParent().getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                     nStatus = 3;
                                 }
                             }
@@ -635,7 +643,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("聊天");
                             if (btns != null && !btns.isEmpty()) {
                                 for (AccessibilityNodeInfo btn : btns) {
-                                    btn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    btn.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                     nStatus = 4;
                                 }
                             }
@@ -645,7 +653,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             List<AccessibilityNodeInfo> btns = hd.findAccessibilityNodeInfosByText("清空聊天记录");
                             if (btns != null && !btns.isEmpty()) {
                                 for (AccessibilityNodeInfo btn : btns) {
-                                    btn.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    btn.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                     nStatus = 5;
                                 }
                             }
@@ -2063,13 +2071,17 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
                         if (titleNodes != null && !titleNodes.isEmpty()) {
                             windowtitle = titleNodes.get(0).getText().toString();
-                            List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
+                            List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HB_LOGO_STRING_ID);
                             if (hbNodes != null && !hbNodes.isEmpty()) {
                                 for (int i = hbNodes.size() - 1; i >= 0; i--) {
                                     AccessibilityNodeInfo nodeInfo = hbNodes.get(i);
                                     try {
-                                        AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent().getParent();
-                                        if (pNode.getClassName().toString().contains("LinearLayout")) {
+                                        AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent();
+                                        //这个有两个，说明已经领过了
+                                        if(nodeInfo.getParent().getChild(1).getChildCount()>1){
+                                            Log.i(TAG, "该红包已经领取或被领完");
+                                        }
+                                        else {
                                             pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                             Log.i(TAG, "发现点击红包");
                                             detect_tm = Calendar.getInstance().getTimeInMillis();
@@ -2261,22 +2273,17 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 windowtitle = titleNodes.get(0).getText().toString();
                                 String contextString = windowtitle;
                                 boolean bfindHb = false;
-                                //6.5.13后，红包领取后，红包条目会自动变化，故不用再检测窗口。
-                                /*
-                                List<AccessibilityNodeInfo> contextNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWCHATTEXT_STRING_ID);
-                                for (AccessibilityNodeInfo contextNode : contextNodes) {
-                                    Rect rect = new Rect();
-                                    contextNode.getBoundsInScreen(rect);
-                                    contextString = contextString + contextNode.getText().toString() + rect.toString();
-                                }*/
-                                // if (!contextString.equals(last_context_string)) {
-                                List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
+                                List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HB_LOGO_STRING_ID);
                                 if (hbNodes != null && !hbNodes.isEmpty()) {
                                     for (int i = hbNodes.size() - 1; i >= 0; i--) {
                                         AccessibilityNodeInfo nodeInfo = hbNodes.get(i);
                                         try {
-                                            AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent().getParent();
-                                            if (pNode.getClassName().toString().contains("LinearLayout")) {
+                                            AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent();
+                                            //这个有两个，说明已经领过了
+                                            if(nodeInfo.getParent().getChild(1).getChildCount()>1){
+                                                Log.i(TAG, "该红包已经领取或被领完");
+                                            }
+                                            else {
                                                 pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                                 Log.i(TAG, "发现点击红包");
                                                 detect_tm = Calendar.getInstance().getTimeInMillis();
@@ -2289,13 +2296,13 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         }
                                     }
                                 }
-                                //last_context_string = contextString;
-                                // }
+
                             }
                         }
                     }
 
-                } else if (className.contains("luckymoney.ui.En_") || className.contains("luckymoney.ui.LuckyMoneyReceiveUI")) {
+                } else if (className.contains("luckymoney.ui.LuckyMoneyNotHookReceiveUI")) {
+                    Log.i(TAG, "载现了");
                     AccessibilityNodeInfo hd = getRootInActiveWindow();
                     if (!bAutoClickOpenButton) {
                         List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
