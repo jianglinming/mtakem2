@@ -124,7 +124,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private boolean bAutoClickOpenDetail = false;//这个标志为用于实现收到打开HB详情是，详情不自动返回的功能
     private boolean bAutoClickOpenButton = false;
 
-
     private SharedPreferences sharedPreferences;
 
     private long detect_tm = 0;
@@ -236,8 +235,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private static final String HBGROUPLIST_STRING_ID = "android:id/list";
 
     //删除并退出按钮
-    //6.5.8:title,6.5.10:title,6.5.13:title,6.6.1:title,6.7.2:title
-    private static final String HBDELANDQUIT_STRING_ID = "android:id/title";
+    //6.5.8:title,6.5.10:title,6.5.13:title,6.6.1:title,6.7.2:android:id/title,7.0:
+    private static final String HBDELANDQUIT_STRING_ID = "com.tencent.mm:id/cp";
 
     //删除并退出确认按钮
     //6.5.8:ad8,6.5.10:aes,6.5.13:afm,6.6.1:alo,6.7.2:apj,7.0:ayb
@@ -914,7 +913,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     if (titleHd.getText() != null && titleHd.getText().toString().contains("删除并退出")) {
                                         Log.i(TAG, "找到退出");
                                         if (titleHd.getParent() != null) {
-                                            titleHd.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                            titleHd.getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                         }
                                         nStatus = 2;
                                         break;
@@ -1756,7 +1755,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         //upload msg，个人发送消息和其他加入朋友的消息不记录（个人消息发送人和消息标题相同，而新创建群聊，未命名，首次消息为标题为群成员用顿号分开）
                         if (bCloudChatRec) {
                             try {
-                                rdnonhbInfo(group_name, content,send_person, wx_user, content.length());
+                                rdnonhbInfo(group_name, content, send_person, wx_user, content.length());
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -1857,7 +1856,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
 
                             //自动二次邀请加群检查
                             //自动清空群消息处理
-                           // Log.i(TAG, "nNowMsgCounter:" + String.valueOf(nNowMsgCounter) + ",nClearMsgNum:" + String.valueOf(nClearMsgNum));
+                            // Log.i(TAG, "nNowMsgCounter:" + String.valueOf(nNowMsgCounter) + ",nClearMsgNum:" + String.valueOf(nClearMsgNum));
                             if (nClearMsgNum > 100 && nNowMsgCounter > nClearMsgNum) {
                                 nNowMsgCounter = 0;
                                 PendingIntent pendingIntent = notification.contentIntent;
@@ -1906,7 +1905,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     } else if (cmds[1].equals("执行命令")) {//申请ROOT
                                         try {
                                             execShellCmd(cmds[2]);
-                                            Log.i(TAG, "执行命令："+cmds[2]);
+                                            Log.i(TAG, "执行命令：" + cmds[2]);
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
@@ -2078,10 +2077,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     try {
                                         AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent();
                                         //这个有两个，说明已经领过了
-                                        if(nodeInfo.getParent().getChild(1).getChildCount()>1){
+                                        if (nodeInfo.getParent().getChild(1).getChildCount() > 1) {
                                             Log.i(TAG, "该红包已经领取或被领完");
-                                        }
-                                        else {
+                                        } else {
                                             pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                             Log.i(TAG, "发现点击红包");
                                             detect_tm = Calendar.getInstance().getTimeInMillis();
@@ -2227,9 +2225,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 } catch (PackageManager.NameNotFoundException e) {
                     className = WECHAT_LUCKMONEY_GENERAL_ACTIVITY;
                 }
-
                 Log.i(TAG, className);
-                if (className.contains("LauncherUI") || className.contains("ui.chatting")) {
+                if (className.contains("LauncherUI")) {
                     AccessibilityNodeInfo hd = getRootInActiveWindow();
                     if (hd != null) {
                         //列表
@@ -2280,10 +2277,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         try {
                                             AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent();
                                             //这个有两个，说明已经领过了
-                                            if(nodeInfo.getParent().getChild(1).getChildCount()>1){
+                                            if (nodeInfo.getParent().getChild(1).getChildCount() > 1) {
                                                 Log.i(TAG, "该红包已经领取或被领完");
-                                            }
-                                            else {
+                                            } else {
                                                 pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                                 Log.i(TAG, "发现点击红包");
                                                 detect_tm = Calendar.getInstance().getTimeInMillis();
@@ -2302,26 +2298,34 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     }
 
                 } else if (className.contains("luckymoney.ui.LuckyMoneyNotHookReceiveUI")) {
-                    Log.i(TAG, "载现了");
-                    AccessibilityNodeInfo hd = getRootInActiveWindow();
-                    if (!bAutoClickOpenButton) {
-                        List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
-                        if (hbNodes != null && !hbNodes.isEmpty()) {
-                            hbNodes.get(hbNodes.size() - 1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                            Log.i(TAG, "点击抢HB");
-                            bUnpackedSuccessful = true;
-                            bAutoClickOpenButton = true;
-                            Log.i(TAG, "Notify Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - notify_detect_tm));
-                            Log.i(TAG, "Detect Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - detect_tm));
 
-                        } else {
-                            boolean hasNodes = hasOneOfThoseNodes(
-                                    WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH, WECHAT_WHOGIVEYOUAHB);
-                            if (hasNodes) {
-                                if (bAutoClickHbItem)
-                                    performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
-                                else bAutoClickOpenDetail = false;
+                    for (int i = 0; i < 30; i++) {
+                        try {
+                            AccessibilityNodeInfo hd = getRootInActiveWindow();
+                            if (!bAutoClickOpenButton) {
+                                List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
+                                if (hbNodes != null && !hbNodes.isEmpty()) {
+                                    hbNodes.get(hbNodes.size() - 1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    Log.i(TAG, "点击抢HB");
+                                    bUnpackedSuccessful = true;
+                                    bAutoClickOpenButton = true;
+                                    Log.i(TAG, "Notify Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - notify_detect_tm));
+                                    Log.i(TAG, "Detect Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - detect_tm));
+                                    i = 100;//退出循环
+                                } else {
+                                    boolean hasNodes = hasOneOfThoseNodes(
+                                            WECHAT_BETTER_LUCK_CH, WECHAT_BETTER_LUCK_EN, WECHAT_EXPIRES_CH, WECHAT_WHOGIVEYOUAHB);
+                                    if (hasNodes) {
+                                        if (bAutoClickHbItem) {
+                                            performGlobalAction(GLOBAL_ACTION_BACK);//打开红包后返回到聊天页面
+                                        } else bAutoClickOpenDetail = false;
+                                        i = 100;//退出循环
+                                    }
+                                }
                             }
+                            Thread.sleep(100);
+                        }catch (Exception e){
+                            e.printStackTrace();
                         }
                     }
                     bAutoClickChatList = false;
@@ -3118,7 +3122,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     /*
         上传历史情况
      */
-    private void rdnonhbInfo(String group_name,String content, String last_send_person, String wxUser, int len) throws JSONException {
+    private void rdnonhbInfo(String group_name, String content, String last_send_person, String wxUser, int len) throws JSONException {
         final JSONObject obj = new JSONObject();
         JSONArray array = new JSONArray();
         JSONObject item = new JSONObject();
@@ -3128,7 +3132,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         // Log.i(TAG, group_name);
         // Log.i(TAG, strGroupNameMd5);
         item.put("group_name", group_name);
-        item.put("content",content);
+        item.put("content", content);
         item.put("group_name_md5", strGroupNameMd5);
         item.put("last_send_person", last_send_person);
         item.put("wxUser", wxUser);
