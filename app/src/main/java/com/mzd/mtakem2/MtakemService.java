@@ -81,6 +81,10 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     private static final String WECHAT_BETTER_LUCK_CH = "手慢了";
     private static final String WECHAT_EXPIRES_CH = "已超过24小时";
     private static final String WECHAT_WHOGIVEYOUAHB = "给你发了一个";
+    private static final int MSG_TYPE_GROUP = 0;
+    private static final int MSG_TYPE_PERSON = 1;
+    private static final int MSG_TYPE_OTHER = 2;
+
 
     private boolean bUnpackedSuccessful = false;//成功打开HB
     private boolean bAutoMode = false;//后台全自动抢HB模式，抢完红包自动回桌面
@@ -1748,10 +1752,26 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                     group_name = group_name != null ? group_name : "";
                     nNowMsgCounter++; //收到一个通知，计数器加一
                     //get send person
+                    int msgType = MSG_TYPE_GROUP;//0,群消息
                     int endIndex = content.indexOf(":");
                     String send_person = "";
-                    if (endIndex != -1) {
+                    if(endIndex!=-1){
                         send_person = content.substring(0, endIndex);
+                        if(send_person.equals(group_name)){
+                            msgType = MSG_TYPE_PERSON;
+                            Log.i(TAG,"PERSON MSG");
+                        }else{
+                            msgType = MSG_TYPE_GROUP;
+                            Log.i(TAG,"GROUP MSG");
+                        }
+                    }
+                    else{
+                        msgType = MSG_TYPE_OTHER;
+                    }
+                    //Log.i(TAG,send_person);
+                    //Log.i(TAG,group_name);
+                    if (endIndex != -1) {
+
                         //upload msg，个人发送消息和其他加入朋友的消息不记录（个人消息发送人和消息标题相同，而新创建群聊，未命名，首次消息为标题为群成员用顿号分开）
                         if (bCloudChatRec) {
                             try {
@@ -1810,8 +1830,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             setEventTypeContentAndStatus(true);
                         } else {
 
-                            //自动加群处理
-                            if (bAutoReceptGroup && content.contains("[链接] 邀请你加入群聊")) {
+                            //自动加群处理,个人发送的邀请才有效
+                            if (bAutoReceptGroup && msgType==MSG_TYPE_PERSON && content.contains("[链接] 邀请你加入群聊")) {
                                 PendingIntent pendingIntent = notification.contentIntent;
                                 setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
                                 try {
