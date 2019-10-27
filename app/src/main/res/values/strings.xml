@@ -25,7 +25,7 @@
     <string name="activated_success">激活成功</string>
     <string name="activated_fail">激活失败</string>
     <string name="soft_expired">软件过期</string>
-    <string name="aboutmsg">联系人：赵小姐\nQQ:1822492744</string>
+    <string name="aboutmsg">关于我们</string>
     <string name="title_about">关于我们</string>
     <string name="resetwxuser">重置Wx用户</string>
     <string name="manmode">简易版</string>
