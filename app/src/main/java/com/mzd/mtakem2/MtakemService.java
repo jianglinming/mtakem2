@@ -238,6 +238,21 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     //7.0.7:s6
     private static final String SENDMSGSEARCHLISTTITLE = "com.tencent.mm:id/s6";
 
+    //搜索的分类项，如果有相关项的按钮
+    //7.0.7:b0_
+    private static final String SENDMSGSEARCHCLASSIFYTITLE = "com.tencent.mm:id/b0_";
+
+    //输入关键字，搜不出任何关联项，微信会提示搜索微信号按钮ID
+    //7.0.7:c6q
+    private static final String SENDMSGSEARCHWXBTN= "com.tencent.mm:id/c6q";
+
+    //输入关键字，搜不出任何关联项，微信会提示搜索微信号按钮ID
+    //7.0.7:c70
+    private static final String SENDMSGSEARCHPYQDBTN= "com.tencent.mm:id/c70";
+
+    //搜索页面的返回按钮
+    //7.0.7:m4
+    private static final String SENDMSGSEARCHKEYRETURNBTN= "com.tencent.mm:id/m4";
 
     boolean bInviteAgain = false; //二次根据服务器判断的群清单，再次执行要求指令
     Handler mHander = new Handler();
@@ -1604,6 +1619,15 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     }
                                 }
                             }
+                            else{
+                                //CHATLISTWINDOWLISTVIEW_STRING_ID
+                                List<AccessibilityNodeInfo> lviews = hd.findAccessibilityNodeInfosByViewId(CHATLISTWINDOWLISTVIEW_STRING_ID);
+                                if(lviews!=null&&!lviews.isEmpty()){
+                                    for(AccessibilityNodeInfo lview:lviews){
+                                        lview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                                    }
+                                }
+                            }
                         }
                         break;
 
@@ -1633,6 +1657,19 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 }
                                 if(bGetSearchList){
                                     nStatus = 0;
+                                }
+                            }else{
+                                //如果能找到这些项，说明确实搜索完了，找不到相关信息
+                                List<AccessibilityNodeInfo> classifies = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHCLASSIFYTITLE);
+                                List<AccessibilityNodeInfo> swxs = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHWXBTN);
+                                List<AccessibilityNodeInfo> pyqs = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHPYQDBTN);
+                                List<AccessibilityNodeInfo> rtbtns = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHKEYRETURNBTN);
+                                if((classifies!=null&&!classifies.isEmpty())||(swxs!=null&&!swxs.isEmpty())||(pyqs!=null&&!pyqs.isEmpty())){
+                                    for(AccessibilityNodeInfo rtbtn:rtbtns){
+                                        rtbtn.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    }
+                                    Log.i(TAG,"没找到发送的对象");
+                                    nStatus = 4;
                                 }
                             }
                         }
@@ -2007,7 +2044,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             }
 
 
-                            //自动邀请加群处理
+                            //自动指令处理
                             if (bAutoHostCmd && remoteHostName.contains(send_person) && remoteHostName.contains(group_name)) {
                                 String[] cmds = content.split("\\[sp\\]");
                                 //指令为定长4
