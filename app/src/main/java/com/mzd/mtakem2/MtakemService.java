@@ -339,7 +339,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
     };
 
-    private static final int NOTIFYDOGWATCHERTIME = 60*1000*5;//看门狗周期(ms)
+    private static final int NOTIFYDOGWATCHERTIME = 60*1000*3;//看门狗周期(ms)
     boolean reset_dog_flag = false;
     Runnable dogFunc = new Runnable() {
         @Override
@@ -363,6 +363,23 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         try{
                             switch (nStatus){
                                 case 0:{
+                                    List<AccessibilityNodeInfo> confirmBtns = hd.findAccessibilityNodeInfosByText("确认");
+                                    List<AccessibilityNodeInfo> waitBtns = hd.findAccessibilityNodeInfosByText("等待");
+                                    if(confirmBtns!=null && !confirmBtns.isEmpty()){
+                                        if(waitBtns!=null&&!waitBtns.isEmpty()){
+                                            for (AccessibilityNodeInfo confirmBtn:confirmBtns){
+                                                if(confirmBtn.isClickable()){
+                                                    confirmBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                    Log.i(TAG,"不等待,确认关闭");
+                                                }
+                                            }
+                                        }
+                                    }
+                                    nStatus = 1;
+                                }
+                                break;
+
+                                case 1:{
                                     if("com.tencent.mm".equals(hd.getPackageName())){
                                         performGlobalAction(GLOBAL_ACTION_BACK);
                                         performGlobalAction(GLOBAL_ACTION_BACK);
@@ -1397,7 +1414,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         int nStatus = 0;
         int nStatusCounter = 0;
         String resultStr = "";
-        for (i = 0; i < 100; i++) {
+        for (i = 0; i < 200; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
             if (hd != null) {
                 try {
@@ -2284,8 +2301,23 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     try {
                                         //有些小程序也用HB_LOGO_STRING_ID这个标识，所以要找出差异区分
                                         if ("微信红包".equals(nodeInfo.getChild(1).getChild(0).getText().toString())) {
+                                            //Log.i(TAG,"数量"+String.valueOf(nodeInfo.getChild(0).getChildCount()));//企业群3，个人群1
+                                            boolean bylq = false;//是否已经领取判断
+                                            //大于1说明的企业号发的红包，否则是个人发的
+                                            if(nodeInfo.getChild(0).getChildCount()>1){
+                                                //企业微信发的红包
+                                                if(nodeInfo.getChild(0).getChild(1).getChild(1).getChildCount() > 1){
+                                                    bylq = true;
+                                                }
+                                            }
+                                            else{
+                                                //个人发的红包
+                                                if(nodeInfo.getChild(0).getChild(0).getChild(1).getChildCount() > 1){
+                                                    bylq = true;
+                                                }
+                                            }
                                             //这个有两个，说明已经领过了
-                                            if (nodeInfo.getChild(0).getChild(0).getChild(1).getChildCount() > 1) {
+                                            if (bylq) {
                                                 Log.i(TAG, "该红包已经领取或被领完");
                                             } else {
                                                 nodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -2297,7 +2329,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                             }
                                         }
                                     } catch (Exception e) {
-                                        //e.printStackTrace();
+                                        e.printStackTrace();
                                     }
                                 }
                                 if (!bAutoClickHbItem) {
@@ -2485,8 +2517,23 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         AccessibilityNodeInfo nodeInfo = hbNodes.get(i);
                                         try {
                                             if ("微信红包".equals(nodeInfo.getChild(1).getChild(0).getText().toString())) {
+                                                //Log.i(TAG,"数量"+String.valueOf(nodeInfo.getChild(0).getChildCount()));//企业群3，个人群1
+                                                boolean bylq = false;//是否已经领取判断
+                                                //大于1说明的企业号发的红包，否则是个人发的
+                                                if(nodeInfo.getChild(0).getChildCount()>1){
+                                                    //个人发的红包
+                                                    if(nodeInfo.getChild(0).getChild(1).getChild(1).getChildCount() > 1){
+                                                        bylq = true;
+                                                    }
+                                                }
+                                                else{
+                                                    //个人发的红包
+                                                    if(nodeInfo.getChild(0).getChild(0).getChild(1).getChildCount() > 1){
+                                                        bylq = true;
+                                                    }
+                                                }
                                                 //这个有两个，说明已经领过了
-                                                if (nodeInfo.getChild(0).getChild(0).getChild(1).getChildCount() > 1) {
+                                                if (bylq) {
                                                     Log.i(TAG, "该红包已经领取或被领完");
                                                 } else {
                                                     nodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -2901,7 +2948,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         String result = "未获取到";
         int i = 0;
         int nStatus = 0;
-        for (i = 0; i < 100; i++) {
+        for (i = 0; i < 150; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
             if (hd != null) {
                 try {
