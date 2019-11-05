@@ -1120,12 +1120,16 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     /*
             自动邀请好友加群
      */
-    private void yqfriends(String groupName, String friendStr) throws InterruptedException {
+    private String yqfriends(String groupName, String friendStr) throws InterruptedException {
         int i = 0;
         int nStatus = 0;
-        int nStatusCounter = 0;
-        String lastGroupName = "";
-        boolean bSelectionClicked = false;
+        String result = "超时或者错误";
+        String group = "";//最终邀请的全名
+        String members = "";//最终邀请人人员
+        String members_joined = "";//已经加群的好友
+        String members_unjoined = "";//还没加这个群的好友
+        String members_all = "";//全部工作群好友
+
         String friends[] = friendStr.split("\\|");
         for (i = 0; i < 200; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
@@ -1147,7 +1151,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         try {
                                             for (AccessibilityNodeInfo lCheck : lChecks) {
                                                 lCheck.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                nStatus = 1;
+                                                nStatus = 4;
                                             }
                                         } catch (Exception e) {
                                             nStatus = 0;
@@ -1157,13 +1161,88 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 } else {
                                     Log.i(TAG,"当前窗口非目标群,目标("+gName+"),实际("+groupName+")");
                                     performGlobalAction(GLOBAL_ACTION_BACK);
-                                    nStatus = 6;
-                                    nStatusCounter = 0;
+                                    nStatus = 1;
                                 }
                             }
                         }
                         break;
-                        case 1: {
+                        case 1:{
+                            List<AccessibilityNodeInfo> searchBtns = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHBTN);
+                            if(searchBtns!=null&&!searchBtns.isEmpty()){
+                                for(AccessibilityNodeInfo searchBtn:searchBtns){
+                                    if(searchBtn.isClickable()){
+                                        searchBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        Log.i(TAG,"点击搜索按钮");
+                                        nStatus = 2;
+                                    }
+                                }
+                            }
+                            else{
+                                //CHATLISTWINDOWLISTVIEW_STRING_ID
+                                List<AccessibilityNodeInfo> lviews = hd.findAccessibilityNodeInfosByViewId(CHATLISTWINDOWLISTVIEW_STRING_ID);
+                                if(lviews!=null&&!lviews.isEmpty()){
+                                    for(AccessibilityNodeInfo lview:lviews){
+                                        lview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case 2:{
+                            List<AccessibilityNodeInfo> searchEditBoxs = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHEDITBOX);
+                            if(searchEditBoxs!=null&&!searchEditBoxs.isEmpty()){
+                                if(findEditText(hd,groupName)){
+                                    Log.i(TAG,"输入搜索关键词");
+                                    nStatus = 3;
+                                    Thread.sleep(500);
+                                }
+                            }
+                        }
+                        break;
+
+                        case 3:{
+                            List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHLISTTITLE);
+                            if(listTitles!=null&&!listTitles.isEmpty()){
+                                boolean bGetSearchList = false;
+                                for(AccessibilityNodeInfo listTitle:listTitles){
+                                    if(cmpGroup(listTitle.getText().toString(),groupName)){
+                                        if(listTitle.getParent().getParent().getParent().getParent().isClickable()){
+                                            listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                            group = listTitle.getText().toString();
+                                            Log.i(TAG,"点击搜索到的群组");
+                                            bGetSearchList = true;
+                                        }
+                                    }
+                                }
+                                if(bGetSearchList){
+                                    nStatus = 0;
+                                }
+                                else{
+                                    Log.i(TAG,"没找到发送的对象1");
+                                    result = "没找到要邀请的群1";
+                                    nStatus = 200;
+                                    i = 200;
+                                }
+                            }else{
+                                //如果能找到这些项，说明确实搜索完了，找不到相关信息
+                                List<AccessibilityNodeInfo> classifies = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHCLASSIFYTITLE);
+                                List<AccessibilityNodeInfo> swxs = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHWXBTN);
+                                List<AccessibilityNodeInfo> pyqs = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHPYQDBTN);
+                                List<AccessibilityNodeInfo> rtbtns = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHKEYRETURNBTN);
+                                if((classifies!=null&&!classifies.isEmpty())||(swxs!=null&&!swxs.isEmpty())||(pyqs!=null&&!pyqs.isEmpty())){
+                                    for(AccessibilityNodeInfo rtbtn:rtbtns){
+                                        rtbtn.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    }
+                                    Log.i(TAG,"没找到发送的对象2");
+                                    result = "没找到要邀请的群2";
+                                    nStatus = 200;
+                                    i = 200;
+                                }
+                            }
+                        }
+                        break;
+
+                        case 4: {
                             List<AccessibilityNodeInfo> yqNodes = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDSINGROUPBTN);
                             if (yqNodes != null && !yqNodes.isEmpty()) {
                                 for (AccessibilityNodeInfo yqNode : yqNodes) {
@@ -1171,7 +1250,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     if (charSequence != null) {
                                         if (charSequence.toString().contains("添加成员")) {
                                             yqNode.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                            nStatus = 3;
+                                            nStatus = 5;
                                         }
                                     }
                                 }
@@ -1185,140 +1264,65 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                             }
                         }
                         break;
-                        case 3: {
+                        case 5: {
                             if (findEditText(hd, "")) {
                                 pressBackButton();
-                                nStatus = 4;
+                                nStatus = 6;
                             }
                         }
                         break;
                         //点击分类标签
-                        case 4: {
+                        case 6: {
                             List<AccessibilityNodeInfo> nds = hd.findAccessibilityNodeInfosByText("我的工作群");
                             if (nds != null && !nds.isEmpty()) {
                                 for (AccessibilityNodeInfo nd : nds) {
                                     nd.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    Thread.sleep(500);
                                     nStatus = 8;
                                 }
                             }                            ;
-                        }
-                        break;
-                        //向后找
-                        case 6: {
-                            List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
-                            if (listTitles != null && !listTitles.isEmpty()) {
-                                for (AccessibilityNodeInfo listTitle : listTitles) {
-                                    try {
-                                        if (cmpGroup(listTitle.getText().toString(), groupName)) {
-                                            Log.i(TAG,"前滚动目标群,目标("+listTitle.getText().toString()+"),实际("+groupName+")");
-                                            listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                            nStatus = 0;
-                                        }else{
-                                            Log.i(TAG,"前滚动非目标群,目标("+listTitle.getText().toString()+"),实际("+groupName+")");
-                                        }
-                                    } catch (Exception e) {
-                                        // e.printStackTrace();
-                                    }
-                                }
-
-                                if (nStatus != 1) {//及还没找到
-                                    if (listTitles.get(0).getText().toString().equals(lastGroupName)) {
-                                        nStatusCounter++;
-                                        if (nStatusCounter > 10) { //超时没找到的话
-                                            lastGroupName = listTitles.get(listTitles.size() - 1).getText().toString();
-                                            nStatus = 7; //向前面寻找
-                                            nStatusCounter = 0;
-                                        }
-                                    }
-
-                                    if (nStatus != 7) {//如果没转换到向前滚得模式的话：
-                                        List<AccessibilityNodeInfo> listviews = hd.findAccessibilityNodeInfosByViewId(CHATLISTWINDOWLISTVIEW_STRING_ID);
-                                        if (listviews != null && !listviews.isEmpty()) {
-                                            lastGroupName = listTitles.get(0).getText().toString();
-                                            for (AccessibilityNodeInfo listview : listviews) {
-                                                try {
-                                                    listview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
-                                                    Log.i(TAG, "列表滚动1");
-                                                } catch (Exception e) {
-                                                    e.printStackTrace();
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
-                        break;
-                        //向前找
-                        case 7: {
-                            List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(CHATLISTTITLE_STRING_ID);
-                            if (listTitles != null && !listTitles.isEmpty()) {
-                                for (AccessibilityNodeInfo listTitle : listTitles) {
-                                    try {
-                                        if (cmpGroup(listTitle.getText().toString(), groupName)) {
-                                            Log.i(TAG,"后滚动目标群,目标("+listTitle.getText().toString()+"),实际("+groupName+")");
-                                            listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                            nStatus = 0;
-                                        }
-                                        else{
-                                            Log.i(TAG,"后滚动非目标群,目标("+listTitle.getText().toString()+"),实际("+groupName+")");
-                                        }
-                                    } catch (Exception e) {
-                                        // e.printStackTrace();
-                                    }
-                                }
-                                if (nStatus != 1) {//及还没找到
-                                    if (listTitles.get(listTitles.size() - 1).getText().toString().equals(lastGroupName)) {
-                                        nStatusCounter++;
-                                        if (nStatusCounter > 10) { //超时没找到的话
-                                            i = 200;
-                                            nStatus = 70; //向前面寻找
-                                            nStatusCounter = 0;
-                                            Log.i(TAG, "找不到要发送的群");
-                                        }
-                                    }
-                                    List<AccessibilityNodeInfo> listviews = hd.findAccessibilityNodeInfosByViewId(CHATLISTWINDOWLISTVIEW_STRING_ID);
-                                    if (listviews != null && !listviews.isEmpty()) {
-                                        lastGroupName = listTitles.get(listTitles.size() - 1).getText().toString();
-                                        for (AccessibilityNodeInfo listview : listviews) {
-                                            try {
-                                                listview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
-                                                Log.i(TAG, "列表滚动2");
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
-                                            }
-                                        }
-                                    }
-                                }
-
-                            }
                         }
                         break;
                         //根据邀请名单进行选择
                         case 8:{
                             List<AccessibilityNodeInfo> nds = hd.findAccessibilityNodeInfosByViewId(HBYQFRIENDNAMEID);
                             if(nds!=null&&!nds.isEmpty()){
+                                boolean bSel = false;
                                 for(AccessibilityNodeInfo nd:nds){
                                     try{
                                         AccessibilityNodeInfo clickNode = nd.getParent().getParent().getParent().getParent().getParent();
                                         AccessibilityNodeInfo checkNode = nd.getParent().getParent().getParent().getChild(1);
+                                        members_all = members_all + nd.getText().toString()+"、";
                                         if(!checkNode.isChecked()){
                                             for(String friend:friends){
                                                 if (nd.getText().toString().contains(friend)) {
                                                     clickNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                    bSel = true;
                                                     Log.i(TAG,"click:"+nd.getText().toString());
+                                                    members = members + friend+"、";
                                                     break;
                                                 }
                                             }
+                                            members_unjoined = members_unjoined + nd.getText().toString()+"|";
                                             Log.i(TAG,"check:"+nd.getText().toString());
+                                        }
+                                        else{
+                                            members_joined = members_joined + nd.getText().toString()+"、";
                                         }
                                     }
                                     catch (Exception e){
                                     }
                                 }
-                                 nStatus = 9;
 
+                                //如果有选择则进行下一步，如果一个都没有，则表明邀请的对象没有，或已经在群当中。
+                                if(bSel){
+                                    nStatus = 9;
+                                }
+                                else{
+                                    nStatus = 200;
+                                    i = 200;
+                                    result = "邀请的对象不在工作群中或已经入群";
+                                }
                             }
                         }
                         break;
@@ -1359,6 +1363,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     nd.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                     nStatus = 200;
                                     i = 300;
+                                    result = "成功发送邀请";
                                 }
                             }
                             List<AccessibilityNodeInfo> nds1 = hd.findAccessibilityNodeInfosByText("发送");
@@ -1368,6 +1373,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     nd1.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                     nStatus = 200;
                                     i = 300;
+                                    result = "成功发送邀请申请（需群主确认）";
                                 }
                             }
                         }
@@ -1381,6 +1387,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         }
         back2Home();
         Log.i(TAG, "邀请完毕");
+        result = "*"+result+"*" + "\r\n【邀请群】:"+group+"\r\n【执行邀请好友】:"+members+"\r\n【全部工作群好友】:"+members_all+"\r\n【已经在群的好友】:"+members_joined+"\r\n【参考指令】：[sp]邀请加群[sp]"+groupName+"[sp]"+members_unjoined;
+        return result;
     }
 
     private void ClickJoinBtn(){
@@ -2234,7 +2242,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         }
                                         //处理后返回消息
                                         Log.i(TAG, "邀请加群:" + group_name);
-                                        yqfriends(cmds[2], cmds[3]);
+                                        String rt = yqfriends(cmds[2], cmds[3]);
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        sendMsg(group_name,rt);
+                                        back2Home();
                                         setEventTypeContentAndStatus(true);
                                     } else {
                                         PendingIntent pendingIntent = notification.contentIntent;
