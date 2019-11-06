@@ -1390,7 +1390,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         result = "*"+result+"*" + "\r\n【邀请群】:"+group+"\r\n【执行邀请好友】:"+members+"\r\n【全部工作群好友】:"+members_all+"\r\n【已经在群的好友】:"+members_joined+"\r\n【参考指令】：[sp]邀请加群[sp]"+groupName+"[sp]"+members_unjoined;
         return result;
     }
-
+    /*
+        ROOT点击加入群按钮
+     */
     private void ClickJoinBtn(){
         String[] arps = autoReceptParam.split(" ");
         if(arps.length==2){
@@ -1412,6 +1414,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             }
         }
     }
+
     /*
         二维码识别加入群
         groupName:默认反馈消息的群，默认在哪发送，在哪反馈。
@@ -1521,6 +1524,244 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     }
 
     /*
+        补抢
+     */
+    private String checkGroupHb(String groupName){
+        String result = "执行完毕";
+        int i = 0;
+        int nStatus = 0;
+        int  nStatusCounter = 0;
+        for (i = 0; i < 200; i++) {
+            AccessibilityNodeInfo hd = getRootInActiveWindow();
+            if (hd != null) {
+                try{
+                    switch (nStatus) {
+                        case 0: { //查找点击进入群信息按钮
+                            List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
+                            if (titleNodes != null && !titleNodes.isEmpty()) {
+                                String gName = titleNodes.get(0).getText().toString();
+                                if (gName.lastIndexOf("(") != -1) {
+                                    gName = gName.substring(0, gName.lastIndexOf("("));
+                                }
+                                if (cmpGroup(gName, groupName)) {
+                                    Log.i(TAG,"当前窗口为目标群,目标("+gName+"),实际("+groupName+")");
+                                    nStatus = 4;
+                                } else {
+                                    Log.i(TAG,"当前窗口非目标群,目标("+gName+"),实际("+groupName+")");
+                                    performGlobalAction(GLOBAL_ACTION_BACK);
+                                    nStatus = 1;
+                                }
+                            }
+                        }
+                        break;
+                        case 1:{
+                            List<AccessibilityNodeInfo> searchBtns = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHBTN);
+                            if(searchBtns!=null&&!searchBtns.isEmpty()){
+                                for(AccessibilityNodeInfo searchBtn:searchBtns){
+                                    if(searchBtn.isClickable()){
+                                        searchBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                        Log.i(TAG,"点击搜索按钮");
+                                        nStatus = 2;
+                                    }
+                                }
+                            }
+                            else{
+                                //CHATLISTWINDOWLISTVIEW_STRING_ID
+                                List<AccessibilityNodeInfo> lviews = hd.findAccessibilityNodeInfosByViewId(CHATLISTWINDOWLISTVIEW_STRING_ID);
+                                if(lviews!=null&&!lviews.isEmpty()){
+                                    for(AccessibilityNodeInfo lview:lviews){
+                                        lview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case 2:{
+                            List<AccessibilityNodeInfo> searchEditBoxs = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHEDITBOX);
+                            if(searchEditBoxs!=null&&!searchEditBoxs.isEmpty()){
+                                if(findEditText(hd,groupName)){
+                                    Log.i(TAG,"输入搜索关键词");
+                                    nStatus = 3;
+                                    Thread.sleep(500);
+                                }
+                            }
+                        }
+                        break;
+                        case 3:{
+                            List<AccessibilityNodeInfo> listTitles = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHLISTTITLE);
+                            if(listTitles!=null&&!listTitles.isEmpty()){
+                                boolean bGetSearchList = false;
+                                for(AccessibilityNodeInfo listTitle:listTitles){
+                                    if(cmpGroup(listTitle.getText().toString(),groupName)){
+                                        if(listTitle.getParent().getParent().getParent().getParent().isClickable()){
+                                            listTitle.getParent().getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                            Log.i(TAG,"点击搜索到的群组");
+                                            bGetSearchList = true;
+                                        }
+                                    }
+                                }
+                                if(bGetSearchList){
+                                    nStatus = 0;
+                                }
+                                else{
+                                    Log.i(TAG,"没找到发送的对象1");
+                                    result = "没找到要邀请的群1";
+                                    nStatus = 200;
+                                    i = 200;
+                                }
+                            }else{
+                                //如果能找到这些项，说明确实搜索完了，找不到相关信息
+                                List<AccessibilityNodeInfo> classifies = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHCLASSIFYTITLE);
+                                List<AccessibilityNodeInfo> swxs = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHWXBTN);
+                                List<AccessibilityNodeInfo> pyqs = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHPYQDBTN);
+                                List<AccessibilityNodeInfo> rtbtns = hd.findAccessibilityNodeInfosByViewId(SENDMSGSEARCHKEYRETURNBTN);
+                                if((classifies!=null&&!classifies.isEmpty())||(swxs!=null&&!swxs.isEmpty())||(pyqs!=null&&!pyqs.isEmpty())){
+                                    for(AccessibilityNodeInfo rtbtn:rtbtns){
+                                        rtbtn.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    }
+                                    Log.i(TAG,"没找到发送的对象2");
+                                    result = "没找到要邀请的群2";
+                                    nStatus = 200;
+                                    i = 200;
+                                }
+                            }
+                        }
+                        break;
+                        //搜索是否有红包
+                        case 4:{
+                            List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HB_LOGO_STRING_ID);
+                            if (hbNodes != null && !hbNodes.isEmpty()) {
+                                for (int j = hbNodes.size() - 1; j >= 0; j--) {
+                                    AccessibilityNodeInfo nodeInfo = hbNodes.get(j);
+                                    try {
+                                        if ("微信红包".equals(nodeInfo.getChild(1).getChild(0).getText().toString())) {
+                                            //Log.i(TAG,"数量"+String.valueOf(nodeInfo.getChild(0).getChildCount()));//企业群3，个人群1
+                                            boolean bylq = false;//是否已经领取判断
+                                            //大于1说明的企业号发的红包，否则是个人发的
+                                            if(nodeInfo.getChild(0).getChildCount()>1){
+                                                //个人发的红包
+                                                if(nodeInfo.getChild(0).getChild(1).getChild(1).getChildCount() > 1){
+                                                    bylq = true;
+                                                }
+                                            }
+                                            else{
+                                                //个人发的红包
+                                                if(nodeInfo.getChild(0).getChild(0).getChild(1).getChildCount() > 1){
+                                                    bylq = true;
+                                                }
+                                            }
+                                            //这个有两个，说明已经领过了
+                                            if (bylq) {
+                                                Log.i(TAG, "该红包已经领取或被领完");
+                                            } else {
+                                                nodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                chatlist_detect_tm = Calendar.getInstance().getTimeInMillis();
+                                                notify_detect_tm = 0;
+                                                detect_tm = 0;
+                                                Log.i(TAG, "发现点击红包");
+                                                nStatus = 5;
+                                                nStatusCounter = 0;
+                                                break;
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        //e.printStackTrace();
+                                    }
+                                }
+                            }
+
+                            if (nStatus != 5) {
+                                List<AccessibilityNodeInfo> moBtns = hd.findAccessibilityNodeInfosByViewId(HBMOREMSG_STRING_ID);
+                                if (moBtns != null && !moBtns.isEmpty()) {
+                                    //com.tencent.mm:id/a5j
+                                    List<AccessibilityNodeInfo> listvs = hd.findAccessibilityNodeInfosByViewId(CHATCONTENTWINDOWLISTVIEW_STRING_ID);
+                                    if (listvs != null && !listvs.isEmpty()) {
+                                        for (AccessibilityNodeInfo listv : listvs) {
+                                            try {
+                                                listv.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                            //Log.i(TAG, "向上退");
+                                        }
+                                    }
+
+                                } else {
+                                    nStatus = 200;
+                                    i = 200;
+                                }
+                            }
+                        }
+                        break;
+
+                        case 5: {
+                            List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HBOPENBUTTON_STRING_ID);
+                            if (hbNodes != null && !hbNodes.isEmpty()) {
+                                hbNodes.get(hbNodes.size() - 1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                Log.i(TAG, "拆开红包");
+                                Log.i(TAG, "Notify Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - notify_detect_tm));
+                                Log.i(TAG, "Detect Time:" + String.valueOf(Calendar.getInstance().getTimeInMillis() - detect_tm));
+                                nStatus = 6;
+                                nStatusCounter = 0;
+                            } else {
+                                List<AccessibilityNodeInfo> hbNodes1 = hd.findAccessibilityNodeInfosByViewId(HBNONETEXT_STRING_ID);
+                                if (hbNodes1 != null && !hbNodes1.isEmpty()) {
+                                    Log.i(TAG, "红包派完了");
+                                    performGlobalAction(GLOBAL_ACTION_BACK);
+                                    nStatus = 4;
+                                }
+                                nStatusCounter++;
+                                if (nStatusCounter > 50) {
+                                    nStatusCounter = 0;
+                                    performGlobalAction(GLOBAL_ACTION_BACK);
+                                    nStatus = 4;
+                                }
+                            }
+                        }
+                        break;
+
+                        case 6: {
+                            List<AccessibilityNodeInfo> hbNodes = null;
+                            //发送人
+                            hbNodes = hd.findAccessibilityNodeInfosByViewId(HBSENDER_STRING_ID);
+                            if (hbNodes != null & !hbNodes.isEmpty()) {
+                                sender = hbNodes.get(0).getText().toString();
+                                //内容
+                                hbNodes = hd.findAccessibilityNodeInfosByViewId(HBCONTENT_STRING_ID);
+                                if (hbNodes != null & !hbNodes.isEmpty()) {
+                                    hbcontent = hbNodes.get(0).getText().toString();
+                                }
+                                //金额
+                                hbNodes = hd.findAccessibilityNodeInfosByViewId(HBAMOUNTTEXT_STRING_ID);
+                                if (hbNodes != null & !hbNodes.isEmpty()) {
+                                    hb_amount = hbNodes.get(0).getText().toString();
+                                }
+                                wx_group_name = "";
+                                Log.i(TAG, "windowtitle=" + windowtitle);
+                                uploadHbInfo();
+                                performGlobalAction(GLOBAL_ACTION_BACK);
+                                nStatus = 4;
+                            } else {
+                                nStatusCounter++;
+                                if (nStatusCounter > 50) {
+                                    nStatusCounter = 0;
+                                    performGlobalAction(GLOBAL_ACTION_BACK);
+                                    nStatus = 4;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }
+        return result;
+    }
+
+    /*
         查找节点用 BY CLASS NAME
      */
     private AccessibilityNodeInfo findNodeByClassName(AccessibilityNodeInfo nd, String className) {
@@ -1543,6 +1784,9 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         return null;
     }
 
+    /*
+        群名称比较，考虑到不同的群有很多特殊字符很难输入，所以采用多关键字比较法进行比较
+     */
     private boolean cmpGroup(String targetGroup, String inputGroup) {
         boolean bIsTheGroup = true;
         String groupkeys[] = inputGroup.split(" ");
@@ -1765,37 +2009,6 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
             Thread.sleep(100);
         }
         return bResult;
-    }
-    /*
-        指定窗口发送消息
-     */
-
-    private void sendGroupMessage(String groupName, String msg) throws InterruptedException {
-        int i = 0;
-        int nStatus = 0;
-        for (i = 0; i < 30; i++) {
-            AccessibilityNodeInfo hd = getRootInActiveWindow();
-            if (hd != null) {
-                try {
-                    switch (nStatus) {
-                        case 0: {
-                            List<AccessibilityNodeInfo> winTitles = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
-                            if (winTitles != null && !winTitles.isEmpty()) {
-                                performGlobalAction(GLOBAL_ACTION_BACK);
-                                i = 200;
-                                nStatus = 5;
-                            }
-                        }
-                        break;
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            Thread.sleep(100);
-        }
-        sendMsg(groupName, msg);
-        back2Home();
     }
 
 
@@ -2243,6 +2456,24 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         //处理后返回消息
                                         Log.i(TAG, "邀请加群:" + group_name);
                                         String rt = yqfriends(cmds[2], cmds[3]);
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        sendMsg(group_name,rt);
+                                        back2Home();
+                                        setEventTypeContentAndStatus(true);
+                                    }  else if (cmds[1].equals("查群红包")) {
+                                        PendingIntent pendingIntent = notification.contentIntent;
+                                        setEventTypeContentAndStatus(false); //暂时屏蔽content和statu消息监控
+                                        try {
+                                            pendingIntent.send();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        //处理后返回消息
+                                        String rt = checkGroupHb(cmds[2]);
                                         try {
                                             pendingIntent.send();
                                         } catch (Exception e) {
@@ -2783,24 +3014,43 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 List<AccessibilityNodeInfo> titleNodes = hd.findAccessibilityNodeInfosByViewId(WINDOWTITLETEXT_STRING_ID);
                                 if (titleNodes != null && !titleNodes.isEmpty()) {
                                     windowtitle = titleNodes.get(0).getText().toString();
-                                    List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByText("领取红包");
+                                    List<AccessibilityNodeInfo> hbNodes = hd.findAccessibilityNodeInfosByViewId(HB_LOGO_STRING_ID);
                                     if (hbNodes != null && !hbNodes.isEmpty()) {
                                         for (int j = hbNodes.size() - 1; j >= 0; j--) {
                                             AccessibilityNodeInfo nodeInfo = hbNodes.get(j);
                                             try {
-                                                AccessibilityNodeInfo pNode = nodeInfo.getParent().getParent().getParent().getParent();
-                                                if (pNode.getClassName().toString().contains("LinearLayout")) {
-                                                    pNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                    chatlist_detect_tm = Calendar.getInstance().getTimeInMillis();
-                                                    notify_detect_tm = 0;
-                                                    detect_tm = 0;
-                                                    Log.i(TAG, "发现点击红包");
-                                                    nStatus = 4;
-                                                    nStatusCounter = 0;
-                                                    break;
+                                                if ("微信红包".equals(nodeInfo.getChild(1).getChild(0).getText().toString())) {
+                                                    //Log.i(TAG,"数量"+String.valueOf(nodeInfo.getChild(0).getChildCount()));//企业群3，个人群1
+                                                    boolean bylq = false;//是否已经领取判断
+                                                    //大于1说明的企业号发的红包，否则是个人发的
+                                                    if(nodeInfo.getChild(0).getChildCount()>1){
+                                                        //个人发的红包
+                                                        if(nodeInfo.getChild(0).getChild(1).getChild(1).getChildCount() > 1){
+                                                            bylq = true;
+                                                        }
+                                                    }
+                                                    else{
+                                                        //个人发的红包
+                                                        if(nodeInfo.getChild(0).getChild(0).getChild(1).getChildCount() > 1){
+                                                            bylq = true;
+                                                        }
+                                                    }
+                                                    //这个有两个，说明已经领过了
+                                                    if (bylq) {
+                                                        Log.i(TAG, "该红包已经领取或被领完");
+                                                    } else {
+                                                        nodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                        chatlist_detect_tm = Calendar.getInstance().getTimeInMillis();
+                                                        notify_detect_tm = 0;
+                                                        detect_tm = 0;
+                                                        Log.i(TAG, "发现点击红包");
+                                                        nStatus = 4;
+                                                        nStatusCounter = 0;
+                                                        break;
+                                                    }
                                                 }
                                             } catch (Exception e) {
-                                                e.printStackTrace();
+                                                //e.printStackTrace();
                                             }
                                         }
                                     }
