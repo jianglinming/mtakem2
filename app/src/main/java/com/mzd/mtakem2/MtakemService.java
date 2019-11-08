@@ -1526,7 +1526,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
     /*
         补抢
      */
-    private String checkGroupHb(String groupName){
+    private String checkGroupHb(String groupName,int waitTime){
         String result = "超时或错误";
         int i = 0;
         int nStatus = 0;
@@ -1534,7 +1534,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         int hbNum = 0;
         int hbNumPacked = 0;
         int hbNumUnpacked = 0;
-        for (i = 0; i < 200; i++) {
+        for (i = 0; i < 400; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
             if (hd != null) {
                 try{
@@ -1549,6 +1549,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                 if (cmpGroup(gName, groupName)) {
                                     Log.i(TAG,"当前窗口为目标群,目标("+gName+"),实际("+groupName+")");
                                     nStatus = 4;
+                                    nStatusCounter = 0;
                                 } else {
                                     Log.i(TAG,"当前窗口非目标群,目标("+gName+"),实际("+groupName+")");
                                     performGlobalAction(GLOBAL_ACTION_BACK);
@@ -1654,8 +1655,11 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                                 }
                                                 else{
                                                     Log.i(TAG,"个人红包");
+                                                    Log.i(TAG,nodeInfo.getChild(0).getChild(0).getChild(1).getChild(0).getText().toString());
+                                                    Log.i(TAG,String.valueOf(nodeInfo.getChild(0).getChild(0).getChild(1).getChildCount()));
                                                     //个人发的红包
                                                     if(nodeInfo.getChild(0).getChild(0).getChild(1).getChildCount() > 1){
+                                                        Log.i(TAG,nodeInfo.getChild(0).getChild(0).getChild(1).getChild(1).getText().toString());
                                                         bylq = true;
                                                     }
                                                 }
@@ -1697,11 +1701,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     }
 
                                 } else {
-                                    back2Home();
-                                    nStatus = 200;
-                                    i = 200;
-                                    result = "执行完毕:发现总红包("+String.valueOf(hbNum)+")发现领完红包("+String.valueOf( hbNumPacked )+"),打开红包("+String.valueOf(hbNumUnpacked)+")";
-                                    Log.i(TAG,result);
+                                    nStatusCounter++;
+                                    if(nStatusCounter>waitTime){
+                                        back2Home();
+                                        nStatus = 200;
+                                        i = 1000;
+                                        result = "执行完毕:发现总红包("+String.valueOf(hbNum)+")发现领完红包("+String.valueOf( hbNumPacked )+"),打开红包("+String.valueOf(hbNumUnpacked)+")";
+                                        Log.i(TAG,result);
+                                    }
                                 }
                             }
                         }
@@ -1782,7 +1789,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         //结束状态处理
                         case 10:{
                             nStatus = 200;
-                            i = 200;
+                            i = 1000;
                             nStatus = 200;
                             back2Home();
                         }
@@ -1801,6 +1808,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                 e.printStackTrace();
             }
         }
+        back2Home();
         return result;
     }
 
@@ -2416,7 +2424,8 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                                 "[sp]二维码加群[sp]反馈消息的备用群[sp]随意\n" +
                                                 "[sp]获取余额[sp]要反馈的群名称[sp]随意\n" +
                                                 "[sp]搜索历史消息[sp]作用时间（必须是数字）[sp]随意\n" +
-                                                "[sp]执行指令[sp]指令内容[sp]随意";
+                                                "[sp]执行指令[sp]指令内容[sp]随意\n" +
+                                                "[sp]查群红包[sp]要补抢的群[sp]监听的时间(非法数字则默认为零，最大为400,约40s左右)";
                                         sendMsg(group_name, helpMsg);
                                         back2Home();
                                         hostCmd = "";
@@ -2515,8 +2524,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
+                                        int waitTime = 0;
+                                        try{
+                                            waitTime = Integer.parseInt(cmds[3]);
+                                        }catch (Exception e){
+                                            waitTime = 0;
+                                        }
                                         //处理后返回消息
-                                        String rt = checkGroupHb(cmds[2]);
+                                        String rt = checkGroupHb(cmds[2],waitTime);
                                         Thread.sleep(500);
                                         try {
                                             pendingIntent.send();
@@ -3282,6 +3297,14 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     nStatus = 2;
                                 }
                             }
+
+                            //CHATLISTWINDOWLISTVIEW_STRING_ID
+                            List<AccessibilityNodeInfo> lviews = hd.findAccessibilityNodeInfosByViewId(CHATLISTWINDOWLISTVIEW_STRING_ID);
+                            if(lviews!=null&&!lviews.isEmpty()){
+                                for(AccessibilityNodeInfo lview:lviews){
+                                    lview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                                }
+                            }
                         }
                         break;
                         case 2: {
@@ -3298,6 +3321,13 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                                     if (bottomBtn.getText() != null && bottomBtn.getText().toString().contains("我")) {
                                         bottomBtn.getParent().getParent().getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                         Log.i(TAG,"再次余额点击我按钮");
+                                    }
+                                }
+                                //CHATLISTWINDOWLISTVIEW_STRING_ID
+                                List<AccessibilityNodeInfo> lviews = hd.findAccessibilityNodeInfosByViewId(CHATLISTWINDOWLISTVIEW_STRING_ID);
+                                if(lviews!=null&&!lviews.isEmpty()){
+                                    for(AccessibilityNodeInfo lview:lviews){
+                                        lview.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
                                     }
                                 }
                             }
