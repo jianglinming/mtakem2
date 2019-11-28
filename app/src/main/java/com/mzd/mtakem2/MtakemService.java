@@ -1532,6 +1532,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
         int nStatus = 0;
         int  nStatusCounter = 0;
         HbInfo hbInfo = new HbInfo();
+        HbItemInfo hbItemInfo = new HbItemInfo();
         for (i = 0; i < 400; i++) {
             AccessibilityNodeInfo hd = getRootInActiveWindow();
             if (hd != null) {
@@ -1631,7 +1632,7 @@ public class MtakemService extends AccessibilityService implements SharedPrefere
                         break;
                         //搜索是否有红包
                         case 4:{
-                            HbItemInfo hbItemInfo = new HbItemInfo();
+                            hbItemInfo.reset();
                             checkHbItem(hd,hbItemInfo);
                             if(hbItemInfo.hbItem!=null){
                                 hbItemInfo.hbItem.performAction(AccessibilityNodeInfo.ACTION_CLICK);
