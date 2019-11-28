@@ -103,7 +103,7 @@ public class HbDataCheckThread extends Thread {
                 //如果数据库有数据就上传
                 if (total != 0) {
                     try {
-                        HttpUtils.doPostAsyn(mContext.getText(R.string.uribase) + "/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" + URLEncoder.encode(obj.toString(), "gbk"), new HttpUtils.CallBack() {
+                        HttpUtils.doPostAsyn(mContext.getText(R.string.uribase) + "/httpfun.jsp?action=InsertHbInfo", "strHbInfo=" + URLEncoder.encode(obj.toString(), "gbk"),new HttpUtils.CallBack() {
                             @Override
                             public void onRequestComplete(String result) {
                                 boolean bUploadSuccessful = false;

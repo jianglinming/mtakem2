@@ -12,6 +12,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -179,8 +181,9 @@ public class HttpUtils
             conn.setRequestProperty("connection", "Keep-Alive");
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type",
-                    "application/x-www-form-urlencoded");
-            conn.setRequestProperty("charset", "utf-8");
+                    "application/x-www-form-urlencoded;;charset=GBK");
+            conn.setRequestProperty("charset", "GBK");
+
             conn.setUseCaches(false);
             // 发送POST请求必须设置如下两行
             conn.setDoOutput(true);
